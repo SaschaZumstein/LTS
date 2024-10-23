@@ -61,14 +61,22 @@ void Error_Handler(void);
 #define B1_GPIO_Port GPIOC
 #define USART2_TX_Pin GPIO_PIN_2
 #define USART2_TX_GPIO_Port GPIOA
+#define VIDEO_P_Pin GPIO_PIN_4
+#define VIDEO_P_GPIO_Port GPIOA
 #define Green_LED_Pin GPIO_PIN_5
 #define Green_LED_GPIO_Port GPIOA
+#define READ_Pin GPIO_PIN_10
+#define READ_GPIO_Port GPIOB
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
-#define SWO_Pin GPIO_PIN_3
-#define SWO_GPIO_Port GPIOB
+#define DATA_RDY_Pin GPIO_PIN_3
+#define DATA_RDY_GPIO_Port GPIOB
+#define SHUTTER_Pin GPIO_PIN_4
+#define SHUTTER_GPIO_Port GPIOB
+#define CLR_PIX_Pin GPIO_PIN_5
+#define CLR_PIX_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
