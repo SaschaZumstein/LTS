@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "epc901.h"
+#include <stdio.h>
+//#include "epc901.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,16 +105,20 @@ int main(void) {
 	MX_USART2_UART_Init();
 	MX_ADC1_Init();
 	/* USER CODE BEGIN 2 */
-	// Init the epc901
-	epc901_init();
-
+	// Init
+	HAL_GPIO_WritePin(LASER_ON_GPIO_Port, LASER_ON_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+	//epc901_init();
+	printf("Init sucessfull");
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		// Read the Data from the epc901
-		epc901_getData(100);
+		//epc901_getData(100);
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */

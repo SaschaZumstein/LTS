@@ -124,16 +124,16 @@ void epc901_getData(int shutterTime)
 
 	// Clear pixels from electrons
 	for(int i = 0; i < 3; i++) {
-		HAL_GPIO_WritePin(GPIOA, CLR_PIX_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CLR_PIX_GPIO_Port, CLR_PIX_Pin, GPIO_PIN_SET);
 		usDelay(1);
-		HAL_GPIO_WritePin(GPIOA, CLR_PIX_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(CLR_PIX_GPIO_Port, CLR_PIX_Pin, GPIO_PIN_RESET);
 		usDelay(1);
 	}
 
 	// Open shutter
-	HAL_GPIO_WritePin(GPIOB, SHUTTER_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(SHUTTER_GPIO_Port, SHUTTER_Pin, GPIO_PIN_SET);
 	usDelay(shutterTime);
-	HAL_GPIO_WritePin(GPIOB, SHUTTER_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(SHUTTER_GPIO_Port, SHUTTER_Pin, GPIO_PIN_RESET);
 
 	// Wait until data is ready
 	while (!HAL_GPIO_ReadPin(DATA_RDY_GPIO_Port, DATA_RDY_Pin))
@@ -143,15 +143,15 @@ void epc901_getData(int shutterTime)
 
 
 	// first pulse on READ to start conversion
-	HAL_GPIO_WritePin(GPIOB, READ_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(GPIOB, READ_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_RESET);
 	usDelay(1); // delay TCD
 
 
 	// Preload the pipeline
 	for (int i = 0; i < 3; i++) {
-		HAL_GPIO_WritePin(GPIOB, READ_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOB, READ_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_RESET);
 	}
 	
 	// Start of Frame
@@ -159,8 +159,8 @@ void epc901_getData(int shutterTime)
 
 	// Readout the data
 	for (int i = 0; i < NUM_OF_PIX; i++) {
-		HAL_GPIO_WritePin(GPIOB, READ_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOB, READ_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_RESET);
 
 	    // Get ADC value
 	    HAL_ADC_Start(&hadc);
