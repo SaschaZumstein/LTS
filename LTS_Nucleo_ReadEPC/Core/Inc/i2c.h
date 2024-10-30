@@ -21,6 +21,6 @@ extern uint8_t I2C_Read_Register(uint8_t address, uint8_t reg);
 extern void I2C_Write_Register(uint8_t address, uint8_t reg, uint8_t data);
 void I2C_Read_FIFO(uint8_t address, uint8_t reg, uint16_t size);
 
-uint8_t data;
+extern uint8_t data;
 
 #endif /* INC_I2C_H_ */

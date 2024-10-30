@@ -22,7 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-//#include "epc901.h"
+#include "epc901.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,6 +45,8 @@ ADC_HandleTypeDef hadc1;
 
 I2C_HandleTypeDef hi2c1;
 
+TIM_HandleTypeDef htim9;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -57,6 +59,7 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_TIM9_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -104,21 +107,29 @@ int main(void) {
 	MX_I2C1_Init();
 	MX_USART2_UART_Init();
 	MX_ADC1_Init();
+	MX_TIM9_Init();
 	/* USER CODE BEGIN 2 */
 	// Init
+	HAL_TIM_Base_Start(&htim9);
 	HAL_GPIO_WritePin(LASER_ON_GPIO_Port, LASER_ON_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
-	//epc901_init();
-	printf("Init sucessfull");
+	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+	epc901_init();
+	printf("Init sucessfull\n\r");
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		// Read the Data from the epc901
-		//epc901_getData(100);
+		epc901_getData(1);
+		HAL_Delay(1000);
+		epc901_getData(10);
+		HAL_Delay(1000);
+		epc901_getData(100);
+		HAL_Delay(1000);
+
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
@@ -247,6 +258,41 @@ static void MX_I2C1_Init(void) {
 	/* USER CODE BEGIN I2C1_Init 2 */
 
 	/* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+ * @brief TIM9 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM9_Init(void) {
+
+	/* USER CODE BEGIN TIM9_Init 0 */
+
+	/* USER CODE END TIM9_Init 0 */
+
+	TIM_ClockConfigTypeDef sClockSourceConfig = { 0 };
+
+	/* USER CODE BEGIN TIM9_Init 1 */
+
+	/* USER CODE END TIM9_Init 1 */
+	htim9.Instance = TIM9;
+	htim9.Init.Prescaler = 84 - 1;
+	htim9.Init.CounterMode = TIM_COUNTERMODE_UP;
+	htim9.Init.Period = 65536 - 1;
+	htim9.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	htim9.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+	if (HAL_TIM_Base_Init(&htim9) != HAL_OK) {
+		Error_Handler();
+	}
+	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+	if (HAL_TIM_ConfigClockSource(&htim9, &sClockSourceConfig) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN TIM9_Init 2 */
+
+	/* USER CODE END TIM9_Init 2 */
 
 }
 

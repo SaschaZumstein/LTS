@@ -21,7 +21,7 @@ This file contains some function for I2C communication
 /********************************************************************************************/
 /* Local Variables                                                                          */
 /********************************************************************************************/
-I2C_HandleTypeDef hi2c1;	// Handler for the I2C communication
+extern I2C_HandleTypeDef hi2c1;		// Handler for the I2C communication
 HAL_StatusTypeDef result;	// Variable for the HAL status
 uint8_t i2cBuf[32];			// I2C Buffer Array
 
@@ -58,9 +58,9 @@ void I2C_Scanner(void)
    	printf("\r\n");
 }
 
-// This Function reset the epc901
-// Parameters: none
-// Return: none
+// This Function reads one register over I2C
+// Parameters: Device address, Register to read
+// Return: The byte stored in the register
 void I2C_Reset_epc901(void)
 {
 	// Store the data to the buffer

@@ -38,8 +38,9 @@ typedef enum
 	CHIP_REV_NO_REG			= 0xFF
 }CCD_CONFIG_REG;
 
-ADC_HandleTypeDef hadc;
-UART_HandleTypeDef huart2;
+extern ADC_HandleTypeDef hadc1;
+extern UART_HandleTypeDef huart2;
+extern TIM_HandleTypeDef htim9;
 
 /********************************************************************************************/
 /* Functions                                                                        */
@@ -139,7 +140,7 @@ void epc901_getData(int shutterTime)
 	while (!HAL_GPIO_ReadPin(DATA_RDY_GPIO_Port, DATA_RDY_Pin))
 	{
 	}
-	printf("Data_RDY is set!:\r\n"); // Only for debugging.
+	//printf("Data_RDY is set!:\r\n"); // Only for debugging.
 
 
 	// first pulse on READ to start conversion
@@ -163,12 +164,12 @@ void epc901_getData(int shutterTime)
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_RESET);
 
 	    // Get ADC value
-	    HAL_ADC_Start(&hadc);
-	    HAL_ADC_PollForConversion(&hadc, HAL_MAX_DELAY);
-	    aquisitionData[i] = HAL_ADC_GetValue(&hadc);
+	    HAL_ADC_Start(&hadc1);
+	    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+	    aquisitionData[i] = HAL_ADC_GetValue(&hadc1);
 		
 		// Send the Data to the Serial interface
-	    // printf("%c", aquisitionData[i] >> 4);
+	    //printf("%d\r\n", aquisitionData[i] >> 4);
 		// Faster with the HAL library than with the printf funktion
 	    buffer[0] = aquisitionData[i] >> 4;
 	    HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
@@ -176,5 +177,11 @@ void epc901_getData(int shutterTime)
 	// End of Frame
 	printf("\r\nEND DATA\r\n");
 	HAL_Delay(1000);
+}
+
+void usDelay(uint16_t delayTime_us)
+{
+	__HAL_TIM_SET_COUNTER(&htim9,0);
+	while (__HAL_TIM_GET_COUNTER(&htim9) < (delayTime_us));
 }
 
