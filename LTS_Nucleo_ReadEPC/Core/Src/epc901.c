@@ -176,6 +176,7 @@ void epc901_getData(int shutterTime)
 	}
 	// End of Frame
 	printf("\r\nEND DATA\r\n");
+	HAL_Delay(100);
 }
 
 void usDelay(uint16_t delayTime_us)

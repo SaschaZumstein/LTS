@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "epc901.h"
+#include "ssd1306.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -109,7 +110,14 @@ int main(void) {
 	MX_ADC1_Init();
 	MX_TIM9_Init();
 	/* USER CODE BEGIN 2 */
-	// Init
+	// Init the display and show startup screen
+	SSD1306_Init();
+	SSD1306_GotoXY(0,10);
+	SSD1306_Puts("LTS Startup", &Font_11x18, 1);
+	SSD1306_GotoXY(0, 30);
+	SSD1306_Puts("Please Wait", &Font_11x18, 1);
+	SSD1306_UpdateScreen();
+	// Init the other elements
 	HAL_TIM_Base_Start(&htim9);
 	HAL_GPIO_WritePin(LASER_ON_GPIO_Port, LASER_ON_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
@@ -117,13 +125,27 @@ int main(void) {
 	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
 	epc901_init();
 	printf("Init sucessfull\n\r");
+	// wait to show startup screen
+	HAL_Delay(2000);
+	SSD1306_Clear();
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		// Read the Data from the epc901
-		epc901_getData(1000);
+		epc901_getData(500);
+
+		// write to the display
+		SSD1306_GotoXY(0,0);
+		SSD1306_Puts("Distanz:", &Font_11x18, 1);
+		SSD1306_GotoXY(0,20);
+		SSD1306_Puts("xyz cm", &Font_11x18, 1);
+		SSD1306_GotoXY(0, 50);
+		SSD1306_Puts("USB: ", &Font_7x10, 1);
+		SSD1306_GotoXY(45, 50);
+		SSD1306_Puts("Bluetooth: ", &Font_7x10, 1);
+		SSD1306_UpdateScreen();
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
