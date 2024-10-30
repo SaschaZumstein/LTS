@@ -59,14 +59,22 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
+#define LED3_Pin GPIO_PIN_0
+#define LED3_GPIO_Port GPIOC
+#define LED2_Pin GPIO_PIN_1
+#define LED2_GPIO_Port GPIOC
 #define USART2_TX_Pin GPIO_PIN_2
 #define USART2_TX_GPIO_Port GPIOA
 #define VIDEO_P_Pin GPIO_PIN_4
 #define VIDEO_P_GPIO_Port GPIOA
 #define Green_LED_Pin GPIO_PIN_5
 #define Green_LED_GPIO_Port GPIOA
+#define LED1_Pin GPIO_PIN_0
+#define LED1_GPIO_Port GPIOB
 #define READ_Pin GPIO_PIN_10
 #define READ_GPIO_Port GPIOB
+#define LASER_ON_Pin GPIO_PIN_7
+#define LASER_ON_GPIO_Port GPIOC
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
@@ -77,6 +85,8 @@ void Error_Handler(void);
 #define SHUTTER_GPIO_Port GPIOB
 #define CLR_PIX_Pin GPIO_PIN_5
 #define CLR_PIX_GPIO_Port GPIOB
+#define SWITCH_Pin GPIO_PIN_6
+#define SWITCH_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
