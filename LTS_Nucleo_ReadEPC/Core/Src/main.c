@@ -123,13 +123,7 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		// Read the Data from the epc901
-		epc901_getData(1);
-		HAL_Delay(1000);
-		epc901_getData(10);
-		HAL_Delay(1000);
-		epc901_getData(100);
-		HAL_Delay(1000);
-
+		epc901_getData(1000);
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */

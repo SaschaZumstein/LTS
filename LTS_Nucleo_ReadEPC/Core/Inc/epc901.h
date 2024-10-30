@@ -11,6 +11,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void epc901_init();
 void epc901_getData(int shutterTime);
-void usDelay(uint16_t delayTime_us);
+void
+usDelay(uint16_t delayTime_us);
 
 #endif /* CCD_EPC_H_ */

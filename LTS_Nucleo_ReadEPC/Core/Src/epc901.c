@@ -169,14 +169,13 @@ void epc901_getData(int shutterTime)
 	    aquisitionData[i] = HAL_ADC_GetValue(&hadc1);
 		
 		// Send the Data to the Serial interface
-	    //printf("%d\r\n", aquisitionData[i] >> 4);
+	    //printf("%d: %d\r\n", i, aquisitionData[i] >> 4);
 		// Faster with the HAL library than with the printf funktion
 	    buffer[0] = aquisitionData[i] >> 4;
 	    HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
 	}
 	// End of Frame
 	printf("\r\nEND DATA\r\n");
-	HAL_Delay(1000);
 }
 
 void usDelay(uint16_t delayTime_us)
