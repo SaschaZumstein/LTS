@@ -56,12 +56,11 @@ def update():
     if len(current_char) > 6:
         print(current_char[:5])
     # check for the start string
-    if current_char[:5] == b'START\r\n':
+    if current_char[:5] == b'START':
         #Read the whole frame
         reading = ser.read(1024)
         #Change from ASCII to uint8
         readings=np.frombuffer(reading, dtype=np.uint8, count=1024)
-        #print(readings)
         #Define the x axis
         x = np.arange(1024)
         # set the curve with this data

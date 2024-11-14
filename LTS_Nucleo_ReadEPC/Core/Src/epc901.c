@@ -118,7 +118,7 @@ void epc901_init() {
 
 
 // Read the data of the epc901 ccd array
-void epc901_getData(int shutterTime)
+void epc901_getData(uint16_t shutterTime)
 {
 	uint16_t aquisitionData[NUM_OF_PIX] = {0};
 	uint8_t buffer[1];

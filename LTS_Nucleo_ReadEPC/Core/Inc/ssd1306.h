@@ -51,6 +51,9 @@ SDA        |PB7          |Serial data line
 
 #include "stdlib.h"
 #include "string.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
 
 
 /* I2C address */
@@ -293,9 +296,9 @@ void SSD1306_Stopscroll(void);
 void SSD1306_InvertDisplay (int i);
 
 
+void SSD1306_InitScreen(void);
 
-
-
+void SSD1306_PrintMeasurements(uint16_t distance, bool bluetoothConnection);
 
 // clear the display
 

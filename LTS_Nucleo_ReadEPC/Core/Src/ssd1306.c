@@ -21,6 +21,10 @@
    ----------------------------------------------------------------------
  */
 #include "ssd1306.h"
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
 
 extern I2C_HandleTypeDef hi2c1;
 /* Write command */
@@ -598,8 +602,39 @@ void SSD1306_DrawFilledCircle(int16_t x0, int16_t y0, int16_t r, SSD1306_COLOR_t
         SSD1306_DrawLine(x0 + y, y0 - x, x0 - y, y0 - x, c);
     }
 }
- 
 
+void SSD1306_InitScreen(void)
+{
+	SSD1306_GotoXY(0,10);
+	SSD1306_Puts("LTS Startup", &Font_11x18, 1);
+	SSD1306_GotoXY(0, 30);
+	SSD1306_Puts("Please Wait", &Font_11x18, 1);
+	SSD1306_UpdateScreen();
+}
+
+void SSD1306_PrintMeasurements(uint16_t distance, bool bluetoothConnection)
+{
+	char distData[9];
+	char bluetooth[13];
+
+	sprintf(distData, "%4d mm", distance);
+	if(bluetoothConnection){
+		strcpy(bluetooth,"Bluetooth:j");
+	}
+	else{
+		strcpy(bluetooth,"Bluetooth:n");
+	}
+
+	SSD1306_GotoXY(0,0);
+	SSD1306_Puts("Distanz:", &Font_11x18, 1);
+	SSD1306_GotoXY(0,20);
+	SSD1306_Puts(distData, &Font_11x18, 1);
+	SSD1306_GotoXY(0, 50);
+	SSD1306_Puts("USB: ", &Font_7x10, 1);
+	SSD1306_GotoXY(45, 50);
+	SSD1306_Puts(bluetooth, &Font_7x10, 1);
+	SSD1306_UpdateScreen();
+}
 
 void SSD1306_Clear (void)
 {

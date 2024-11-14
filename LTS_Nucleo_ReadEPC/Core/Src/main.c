@@ -22,8 +22,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <stdbool.h>
 #include "epc901.h"
 #include "ssd1306.h"
+#include "bluefruitUART.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,6 +50,7 @@ I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim9;
 
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -61,6 +64,7 @@ static void MX_I2C1_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM9_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -84,7 +88,9 @@ static void MX_TIM9_Init(void);
 int main(void) {
 
 	/* USER CODE BEGIN 1 */
-
+	uint16_t distance = 300;
+	uint16_t shutterTime = 500;
+	bool bluetoothConnection = false;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -109,14 +115,11 @@ int main(void) {
 	MX_USART2_UART_Init();
 	MX_ADC1_Init();
 	MX_TIM9_Init();
+	MX_USART1_UART_Init();
 	/* USER CODE BEGIN 2 */
 	// Init the display and show startup screen
 	SSD1306_Init();
-	SSD1306_GotoXY(0,10);
-	SSD1306_Puts("LTS Startup", &Font_11x18, 1);
-	SSD1306_GotoXY(0, 30);
-	SSD1306_Puts("Please Wait", &Font_11x18, 1);
-	SSD1306_UpdateScreen();
+	SSD1306_InitScreen();
 	// Init the other elements
 	HAL_TIM_Base_Start(&htim9);
 	HAL_GPIO_WritePin(LASER_ON_GPIO_Port, LASER_ON_Pin, GPIO_PIN_RESET);
@@ -124,28 +127,27 @@ int main(void) {
 	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
 	epc901_init();
-	printf("Init sucessfull\n\r");
 	// wait to show startup screen
 	HAL_Delay(2000);
 	SSD1306_Clear();
+	printf("Init sucessfull\n\r");
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		// Read the Data from the epc901
-		epc901_getData(500);
-
+		epc901_getData(shutterTime);
 		// write to the display
-		SSD1306_GotoXY(0,0);
-		SSD1306_Puts("Distanz:", &Font_11x18, 1);
-		SSD1306_GotoXY(0,20);
-		SSD1306_Puts("xyz cm", &Font_11x18, 1);
-		SSD1306_GotoXY(0, 50);
-		SSD1306_Puts("USB: ", &Font_7x10, 1);
-		SSD1306_GotoXY(45, 50);
-		SSD1306_Puts("Bluetooth: ", &Font_7x10, 1);
-		SSD1306_UpdateScreen();
+		SSD1306_PrintMeasurements(distance, bluetoothConnection);
+		bluetoothConnection = bluefruit_hasConnection();
+		if(bluetoothConnection){
+			bluefruit_writeMeasurements(distance);
+		}
+		distance += 1;
+		if (distance > 1000) {
+			distance = 300;
+		}
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
@@ -313,6 +315,37 @@ static void MX_TIM9_Init(void) {
 }
 
 /**
+ * @brief USART1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_USART1_UART_Init(void) {
+
+	/* USER CODE BEGIN USART1_Init 0 */
+
+	/* USER CODE END USART1_Init 0 */
+
+	/* USER CODE BEGIN USART1_Init 1 */
+
+	/* USER CODE END USART1_Init 1 */
+	huart1.Instance = USART1;
+	huart1.Init.BaudRate = 9600;
+	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	huart1.Init.StopBits = UART_STOPBITS_1;
+	huart1.Init.Parity = UART_PARITY_NONE;
+	huart1.Init.Mode = UART_MODE_TX_RX;
+	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+	if (HAL_UART_Init(&huart1) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN USART1_Init 2 */
+
+	/* USER CODE END USART1_Init 2 */
+
+}
+
+/**
  * @brief USART2 Initialization Function
  * @param None
  * @retval None
@@ -396,14 +429,6 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-	/*Configure GPIO pins : PA9 PA10 */
-	GPIO_InitStruct.Pin = GPIO_PIN_9 | GPIO_PIN_10;
-	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-	GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
-	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 	/*Configure GPIO pins : DATA_RDY_Pin SWITCH_Pin */
 	GPIO_InitStruct.Pin = DATA_RDY_Pin | SWITCH_Pin;
