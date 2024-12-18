@@ -21,6 +21,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+#include <stdbool.h>
+#include "ssd1306.h"
+#include "bluefruitUART.h"
+#include "usbConn.h"
 
 /* USER CODE END Includes */
 
@@ -74,7 +79,9 @@ static void MX_USART2_UART_Init(void);
 int main(void) {
 
 	/* USER CODE BEGIN 1 */
-
+	uint16_t distance = 300;
+	bool bluetoothConnection = false;
+	bool usbConnection = false;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -100,20 +107,50 @@ int main(void) {
 	MX_USART1_UART_Init();
 	MX_USART2_UART_Init();
 	/* USER CODE BEGIN 2 */
-
+	// Init the display and show startup screen
+	SSD1306_Init();
+	SSD1306_InitScreen();
+	// Init the other elements
+	HAL_GPIO_WritePin(LASER_ON_GPIO_Port, LASER_ON_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+	// wait to show startup screen
+	HAL_Delay(2000);
+	SSD1306_Clear();
+	// Init sucessful
+	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
-		HAL_Delay(500);
-		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);121230
-		HAL_Delay(500);
+		// check the Laser Switch
+		if(HAL_GPIO_ReadPin(LASER_PWR_GPIO_Port, LASER_PWR_Pin)){
+			HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+		}
+		else{
+			HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+		}
+		// write to the display
+		SSD1306_PrintMeasurements(distance, bluetoothConnection, usbConnection);
+		// check for bluetooth connection
+		bluetoothConnection = bluefruit_hasConnection();
+		// write via bluetooth
+		if (bluetoothConnection){
+			bluefruit_writeMeasurements(distance);
+		}
+		// check for usb connection
+		usbConnection = usb_hasConnection();
+		// write via bluetooth
+		if (usbConnection){
+			usb_writeMeasurements(distance);
+		}
+		// distance test
+		distance += 1;
+		if (distance > 1000) {
+			distance = 300;
+		}
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */

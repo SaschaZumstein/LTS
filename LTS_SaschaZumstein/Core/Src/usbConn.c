@@ -14,9 +14,8 @@ This file contains the initialization and the read and write functions for the b
 /********************************************************************************************/
 
 #include "main.h"
-#include "bluefruitUART.h"
+#include "usbConn.h"
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
 
 /********************************************************************************************/
@@ -28,29 +27,29 @@ This file contains the initialization and the read and write functions for the b
 /* Type Definitions                                                                        */
 /********************************************************************************************/
 
-extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart2;
 
 /********************************************************************************************/
 /* Functions                                                                        */
 /********************************************************************************************/
-bool bluefruit_hasConnection(){
-	// TODO send AT-Command and read return
+bool usb_hasConnection()
+{
 	return true;
 }
 
-// Write data via bluetooth
-void bluefruit_writeMeasurements(uint16_t distance)
+void usb_writeMeasurements(uint16_t distance)
 {
 	char sendData[10];
 	sprintf(sendData, "%d mm\n", distance);
-	UART_Send(sendData);
+	UART2_Send(sendData);
 }
 
-void UART_Send(const char *data) {
-    HAL_UART_Transmit(&huart1, (uint8_t *)data, strlen(data), HAL_MAX_DELAY);
+void UART2_Send(const char *data){
+	HAL_UART_Transmit(&huart2, (uint8_t *)data, strlen(data), HAL_MAX_DELAY);
 }
 
-bool UART_Receive(char *buffer, size_t buffer_size) {
-    memset(buffer, 0, buffer_size);
-    return HAL_UART_Receive(&huart1, (uint8_t *)buffer, buffer_size, 1000) == HAL_OK;
+bool UART2_Receive(char *buffer, size_t buffer_size){
+	memset(buffer, 0, buffer_size);
+	    return HAL_UART_Receive(&huart2, (uint8_t *)buffer, buffer_size, 1000) == HAL_OK;
 }
+

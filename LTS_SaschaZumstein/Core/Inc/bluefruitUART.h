@@ -13,7 +13,8 @@
 /* Private function prototypes -----------------------------------------------*/
 bool bluefruit_hasConnection();
 void bluefruit_writeMeasurements(uint16_t distance);
-void UART_Send(const char *data);
-bool UART_Receive(char *buffer, size_t buffer_size);
+void UART1_Send(const char *data);
+bool UART1_Receive(char *buffer, size_t buffer_size);
+
 
 #endif /* CCD_EPC_H_ */
