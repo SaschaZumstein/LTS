@@ -124,7 +124,7 @@ int main(void) {
 	HAL_TIM_Base_Start(&htim9);
 	HAL_GPIO_WritePin(LASER_ON_GPIO_Port, LASER_ON_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
 	epc901_init();
 	// wait to show startup screen
@@ -141,7 +141,7 @@ int main(void) {
 		// write to the display
 		SSD1306_PrintMeasurements(distance, bluetoothConnection);
 		bluetoothConnection = bluefruit_hasConnection();
-		if(bluetoothConnection){
+		if (bluetoothConnection) {
 			bluefruit_writeMeasurements(distance);
 		}
 		distance += 1;
@@ -298,7 +298,7 @@ static void MX_TIM9_Init(void) {
 	htim9.Instance = TIM9;
 	htim9.Init.Prescaler = 84 - 1;
 	htim9.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim9.Init.Period = 65536 - 1;
+	htim9.Init.Period = 65535;
 	htim9.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	htim9.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 	if (HAL_TIM_Base_Init(&htim9) != HAL_OK) {
