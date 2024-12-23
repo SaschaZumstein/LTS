@@ -35,6 +35,7 @@ extern UART_HandleTypeDef huart1;
 /********************************************************************************************/
 bool bluefruit_hasConnection()
 {
+	// TODO check if connected or not
 	return true;
 }
 
