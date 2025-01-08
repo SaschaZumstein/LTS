@@ -44,15 +44,12 @@ void bluefruit_writeMeasurements(uint16_t distance)
 {
 	char sendData[10];
 	sprintf(sendData, "%d mm\n", distance);
-	UART1_Send(sendData);
+	HAL_UART_Transmit(&huart1, (uint8_t *)sendData , strlen(sendData), HAL_MAX_DELAY);
 }
 
-void UART1_Send(const char *data) {
-    HAL_UART_Transmit(&huart1, (uint8_t *)data, strlen(data), HAL_MAX_DELAY);
-}
-
-bool UART1_Receive(char *buffer, size_t buffer_size) {
-    memset(buffer, 0, buffer_size);
-    return HAL_UART_Receive(&huart1, (uint8_t *)buffer, buffer_size, 1000) == HAL_OK;
+void bluefruit_writeOff(void)
+{
+	const char sendData[11] = "Laser aus\n";
+	HAL_UART_Transmit(&huart1, (uint8_t *)sendData , strlen(sendData), HAL_MAX_DELAY);
 }
 

@@ -28,23 +28,6 @@
 extern C {
 #endif
 
-/**
- * This SSD1306 LCD uses I2C for communication
- *
- * Library features functions for drawing lines, rectangles and circles.
- *
- * It also allows you to draw texts and characters using appropriate functions provided in library.
- *
- * Default pinout
- *
-SSD1306    |STM32F10x    |DESCRIPTION
-
-VCC        |3.3V         |
-GND        |GND          |
-SCL        |PB6          |Serial clock line
-SDA        |PB7          |Serial data line
- */
-
 #include "main.h"
 
 #include "fonts.h"
@@ -81,8 +64,6 @@ typedef enum {
 	SSD1306_COLOR_WHITE = 0x01  /*!< Pixel is set. Color depends on LCD */
 } SSD1306_COLOR_t;
 
-
-
 /**
  * @brief  Initializes SSD1306 LCD
  * @param  None
@@ -99,14 +80,6 @@ uint8_t SSD1306_Init(void);
  * @retval None
  */
 void SSD1306_UpdateScreen(void);
-
-/**
- * @brief  Toggles pixels invertion inside internal RAM
- * @note   @ref SSD1306_UpdateScreen() must be called after that in order to see updated LCD screen
- * @param  None
- * @retval None
- */
-void SSD1306_ToggleInvert(void);
 
 /** 
  * @brief  Fills entire LCD with desired color
@@ -190,56 +163,9 @@ void SSD1306_DrawRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, SSD13
  */
 void SSD1306_DrawFilledRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, SSD1306_COLOR_t c);
 
-/**
- * @brief  Draws triangle on LCD
- * @note   @ref SSD1306_UpdateScreen() must be called after that in order to see updated LCD screen
- * @param  x1: First coordinate X location. Valid input is 0 to SSD1306_WIDTH - 1
- * @param  y1: First coordinate Y location. Valid input is 0 to SSD1306_HEIGHT - 1
- * @param  x2: Second coordinate X location. Valid input is 0 to SSD1306_WIDTH - 1
- * @param  y2: Second coordinate Y location. Valid input is 0 to SSD1306_HEIGHT - 1
- * @param  x3: Third coordinate X location. Valid input is 0 to SSD1306_WIDTH - 1
- * @param  y3: Third coordinate Y location. Valid input is 0 to SSD1306_HEIGHT - 1
- * @param  c: Color to be used. This parameter can be a value of @ref SSD1306_COLOR_t enumeration
- * @retval None
- */
-void SSD1306_DrawTriangle(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t x3, uint16_t y3, SSD1306_COLOR_t color);
-
-/**
- * @brief  Draws circle to STM buffer
- * @note   @ref SSD1306_UpdateScreen() must be called after that in order to see updated LCD screen
- * @param  x: X location for center of circle. Valid input is 0 to SSD1306_WIDTH - 1
- * @param  y: Y location for center of circle. Valid input is 0 to SSD1306_HEIGHT - 1
- * @param  r: Circle radius in units of pixels
- * @param  c: Color to be used. This parameter can be a value of @ref SSD1306_COLOR_t enumeration
- * @retval None
- */
-void SSD1306_DrawCircle(int16_t x0, int16_t y0, int16_t r, SSD1306_COLOR_t c);
-
-/**
- * @brief  Draws filled circle to STM buffer
- * @note   @ref SSD1306_UpdateScreen() must be called after that in order to see updated LCD screen
- * @param  x: X location for center of circle. Valid input is 0 to SSD1306_WIDTH - 1
- * @param  y: Y location for center of circle. Valid input is 0 to SSD1306_HEIGHT - 1
- * @param  r: Circle radius in units of pixels
- * @param  c: Color to be used. This parameter can be a value of @ref SSD1306_COLOR_t enumeration
- * @retval None
- */
-void SSD1306_DrawFilledCircle(int16_t x0, int16_t y0, int16_t r, SSD1306_COLOR_t c);
-
-
-
 #ifndef ssd1306_I2C_TIMEOUT
 #define ssd1306_I2C_TIMEOUT					20000
 #endif
-
-/**
- * @brief  Initializes SSD1306 LCD
- * @param  None
- * @retval Initialization status:
- *           - 0: LCD was not detected on I2C port
- *           - > 0: LCD initialized OK and ready to use
- */
-void ssd1306_I2C_Init();
 
 /**
  * @brief  Writes single byte to slave
@@ -262,43 +188,11 @@ void ssd1306_I2C_Write(uint8_t address, uint8_t reg, uint8_t data);
  */
 void ssd1306_I2C_WriteMulti(uint8_t address, uint8_t reg, uint8_t *data, uint16_t count);
 
-/**
- * @brief  Draws the Bitmap
- * @param  X:  X location to start the Drawing
- * @param  Y:  Y location to start the Drawing
- * @param  *bitmap : Pointer to the bitmap
- * @param  W : width of the image
- * @param  H : Height of the image
- * @param  color : 1-> white/blue, 0-> black
- */
-void SSD1306_DrawBitmap(int16_t x, int16_t y, const unsigned char* bitmap, int16_t w, int16_t h, uint16_t color);
-
-// scroll the screen for fixed rows
-
-void SSD1306_ScrollRight(uint8_t start_row, uint8_t end_row);
-
-
-void SSD1306_ScrollLeft(uint8_t start_row, uint8_t end_row);
-
-
-void SSD1306_Scrolldiagright(uint8_t start_row, uint8_t end_row);
-
-
-void SSD1306_Scrolldiagleft(uint8_t start_row, uint8_t end_row);
-
-
-
-void SSD1306_Stopscroll(void);
-
-
-// inverts the display i = 1->inverted, i = 0->normal
-
-void SSD1306_InvertDisplay (int i);
-
-
 void SSD1306_InitScreen(void);
 
-void SSD1306_PrintMeasurements(uint16_t distance, bool bluetoothConnection, bool usbConnection);
+HAL_StatusTypeDef SSD1306_PrintMeasurements(uint16_t distance, bool bluetoothConnection, bool usbConnection);
+
+void SSD1306_PrintOff(bool bluetoothConnection, bool usbConnection);
 
 // clear the display
 
