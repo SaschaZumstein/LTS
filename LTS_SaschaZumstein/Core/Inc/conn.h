@@ -5,15 +5,15 @@
  *  Author: Sascha Zumstein (FHGR)
  */
 
-#ifndef BLUEFRUIT_UART_H
-#define BLUEFRUIT_UART_H
+#ifndef CONN_H
+#define CONN_H
 
 #include <stdbool.h>
 
 /* Private function prototypes -----------------------------------------------*/
 bool bluefruit_hasConnection();
-void bluefruit_writeMeasurements(uint16_t distance);
-void bluefruit_writeOff(void);
+bool usb_hasConnection();
+void conn_writeData(const char *data, int length, bool bluetooth, bool usb);
 
 
 #endif /* CCD_EPC_H_ */

@@ -190,9 +190,7 @@ void ssd1306_I2C_WriteMulti(uint8_t address, uint8_t reg, uint8_t *data, uint16_
 
 void SSD1306_InitScreen(void);
 
-HAL_StatusTypeDef SSD1306_PrintMeasurements(uint16_t distance, bool bluetoothConnection, bool usbConnection);
-
-void SSD1306_PrintOff(bool bluetoothConnection, bool usbConnection);
+HAL_StatusTypeDef SSD1306_PrintData(char *firstLine, char *secondLine, bool bluetoothConnection, bool usbConnection);
 
 // clear the display
 

@@ -14,7 +14,7 @@ This file contains the initialization and the read and write functions for the b
 /********************************************************************************************/
 
 #include "main.h"
-#include "bluefruitUART.h"
+#include "conn.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
@@ -29,6 +29,7 @@ This file contains the initialization and the read and write functions for the b
 /********************************************************************************************/
 
 extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart2;
 
 /********************************************************************************************/
 /* Functions                                                                        */
@@ -39,17 +40,19 @@ bool bluefruit_hasConnection()
 	return true;
 }
 
-// Write data via bluetooth
-void bluefruit_writeMeasurements(uint16_t distance)
+bool usb_hasConnection()
 {
-	char sendData[10];
-	sprintf(sendData, "%d mm\n", distance);
-	HAL_UART_Transmit(&huart1, (uint8_t *)sendData , strlen(sendData), HAL_MAX_DELAY);
+	// TODO check if connected or not
+	return true;
 }
 
-void bluefruit_writeOff(void)
+// Write data
+void conn_writeData(const char *data, int length, bool bluetooth, bool usb)
 {
-	const char sendData[11] = "Laser aus\n";
-	HAL_UART_Transmit(&huart1, (uint8_t *)sendData , strlen(sendData), HAL_MAX_DELAY);
+	if(bluetooth){
+		HAL_UART_Transmit(&huart1, (uint8_t *)data, length, HAL_MAX_DELAY);
+	}
+	if(usb){
+		HAL_UART_Transmit(&huart2, (uint8_t *)data, length, HAL_MAX_DELAY);
+	}
 }
-

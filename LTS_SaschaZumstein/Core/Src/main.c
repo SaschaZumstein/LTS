@@ -24,8 +24,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "ssd1306.h"
-#include "bluefruitUART.h"
-#include "usbConn.h"
+#include "conn.h"
 #include "epc901.h"
 
 /* USER CODE END Includes */
@@ -36,13 +35,48 @@ typedef enum {
 	INIT_LTS, LASER_OFF, LASER_ON, LTS_ERROR
 } state_t;
 typedef enum {
-	NO_ERROR, EPC_INIT, DISPLAY_INIT, EPC_ERROR, DISPLAY_ERROR
+	NO_ERROR, EPC_INIT_ERROR, DISPLAY_INIT_ERROR, EPC_ERROR, DISPLAY_ERROR
 } lts_error_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define NUM_OF_PIX 1024
+#define LASER_SWITCH HAL_GPIO_ReadPin(LASER_PWR_GPIO_Port, LASER_PWR_Pin)
+#define PWR_LED_ON HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET)
+#define PWR_LED_OFF HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET)
+#define MEASURE_LED_ON HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET)
+#define MEASURE_LED_OFF HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET)
+#define LASER_LED_ON HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET)
+#define LASER_LED_OFF HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET)
+#define ON_LEDS { \
+	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET); \
+	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET); \
+	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET); \
+}
+#define OFF_LEDS { \
+	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); \
+	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET); \
+	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET); \
+}
+#define TOGGLE_LEDS(){ \
+    HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin); \
+    HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin); \
+    HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin); \
+}
+#define ENTRY() {\
+	SSD1306_Clear(); \
+	entry = true; \
+}
+#define STATE_CHANGE() {\
+	if(LASER_SWITCH){\
+		state = LASER_OFF;\
+	}\
+	else {\
+		state = LASER_ON;\
+	}\
+	entry = false;\
+}
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -97,7 +131,9 @@ lts_error_t initPeripheral(void);
 int main(void) {
 
 	/* USER CODE BEGIN 1 */
+	// variables
 	uint16_t distance = 300;
+	char distStr[11];
 	uint16_t shutterTime = 100;
 	bool bluetoothConnection = false;
 	bool usbConnection = false;
@@ -105,6 +141,7 @@ int main(void) {
 	lts_error_t lts_error = NO_ERROR;
 	uint8_t errorCntr = 0;
 	bool entry = false;
+	uint16_t measureData[NUM_OF_PIX] = {0};
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -143,6 +180,7 @@ int main(void) {
 		// check for usb connection
 		usbConnection = usb_hasConnection();
 		switch (state) {
+		// init the peripheral
 		case INIT_LTS:
 			lts_error = initPeripheral();
 			if(lts_error != NO_ERROR){
@@ -155,43 +193,36 @@ int main(void) {
 					state = LTS_ERROR;
 				}
 			}
-			else if(HAL_GPIO_ReadPin(LASER_PWR_GPIO_Port, LASER_PWR_Pin)){
-				state = LASER_OFF;
-			}
-			else {
-				state = LASER_ON;
+			else{
+				STATE_CHANGE();
 			}
 			break;
 		//Laser Switch on
 		case LASER_ON:
 			/* entry case */
 			if (!entry) {
-				SSD1306_Clear();
-				HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
-				entry = true;
+				ENTRY();
+				LASER_LED_ON;
 			}
 			/* main case */
 			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-			if(epc901_getData(shutterTime) != HAL_OK){
+			if(epc901_getData(shutterTime, measureData) != HAL_OK){
 				lts_error = EPC_ERROR;
 				state = LTS_ERROR;
 				break;
 			}
 			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
-			distance = epc901_calcDist();
-			if(SSD1306_PrintMeasurements(distance, bluetoothConnection,usbConnection) != HAL_OK){
+			distance = epc901_calcDist(measureData);
+			sprintf(distStr, "%4d mm", distance);
+			if(SSD1306_PrintData("Distanz:",distStr,bluetoothConnection,usbConnection) != HAL_OK){
 				lts_error = DISPLAY_ERROR;
 				state = LTS_ERROR;
 				break;
 			}
-			if (bluetoothConnection) {
-				bluefruit_writeMeasurements(distance);
-			}
-			if (usbConnection) {
-				usb_writeMeasurements(distance);
-			}
+			strcat(distStr,"\r\n");
+			conn_writeData(distStr, 9, bluetoothConnection, usbConnection);
 			/* change case */
-			if (HAL_GPIO_ReadPin(LASER_PWR_GPIO_Port, LASER_PWR_Pin)) {
+			if(LASER_SWITCH){
 				state = LASER_OFF;
 				entry = false;
 			}
@@ -200,66 +231,47 @@ int main(void) {
 		case LASER_OFF:
 			/* entry case */
 			if (!entry) {
-				SSD1306_Clear();
-				HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
-				entry = true;
+				ENTRY();
+				LASER_LED_OFF;
+				conn_writeData("LASER aus\r\n", 11, bluetoothConnection, usbConnection);
 			}
 			/* main case */
-			SSD1306_PrintOff(bluetoothConnection, usbConnection);
-			if (bluetoothConnection) {
-				bluefruit_writeOff();
-			}
-			if (usbConnection) {
-				usb_writeOff();
+			if(SSD1306_PrintData("Laser aus","",bluetoothConnection,usbConnection) != HAL_OK){
+				lts_error = DISPLAY_ERROR;
+				state = LTS_ERROR;
+				break;
 			}
 			/* change case */
-			if (!HAL_GPIO_ReadPin(LASER_PWR_GPIO_Port, LASER_PWR_Pin)) {
+			if(!LASER_SWITCH){
 				state = LASER_ON;
 				entry = false;
 			}
 			break;
+		// error state
 		case LTS_ERROR:
-			HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
-			char errorData[31];
+			ON_LEDS;
 			switch(lts_error){
 			case NO_ERROR:
-				if(HAL_GPIO_ReadPin(LASER_PWR_GPIO_Port, LASER_PWR_Pin)){
-					state = LASER_OFF;
-				}
-				else {
-					state = LASER_ON;
-				}
-			case DISPLAY_INIT:
-				strcpy(errorData, "\r\n\n-- Display init failed --\r\n");
+				STATE_CHANGE();
+			case DISPLAY_INIT_ERROR:
+				conn_writeData("\r\n\n-- Display init failed --\r\n", 31, bluetoothConnection, usbConnection);
 				break;
-			case EPC_INIT:
-				strcpy(errorData,"\r\n\n-- epc init failed --\r\n");
+			case EPC_INIT_ERROR:
+				conn_writeData("\r\n\n-- epc init failed --\r\n", 27, bluetoothConnection, usbConnection);
 				SSD1306_Clear();
-				SSD1306_GotoXY(115,45);
-				SSD1306_Puts("epc init", &Font_11x18, 1);
-				SSD1306_GotoXY(115,25);
-				SSD1306_Puts("failed", &Font_11x18, 1);
-				SSD1306_UpdateScreen();
+				SSD1306_PrintData("epc init","failed",bluetoothConnection,usbConnection);
 				break;
 			case DISPLAY_ERROR:
-				strcpy(errorData, "\r\n\n-- Display error --\r\n");
+				conn_writeData("\r\n\n-- Display error --\r\n", 25, bluetoothConnection, usbConnection);
 				break;
 			case EPC_ERROR:
-				strcpy(errorData,"\r\n\n-- epc error --\r\n");
+				conn_writeData("\r\n\n-- epc error --\r\n", 21, bluetoothConnection, usbConnection);
 				SSD1306_Clear();
-				SSD1306_GotoXY(115,45);
-				SSD1306_Puts("epc error", &Font_11x18, 1);
-				SSD1306_UpdateScreen();
+				SSD1306_PrintData("epc error","",bluetoothConnection,usbConnection);
 				break;
 			}
-			HAL_UART_Transmit(&huart1, (uint8_t *)errorData , strlen(errorData), HAL_MAX_DELAY);
-			HAL_UART_Transmit(&huart2, (uint8_t *)errorData , strlen(errorData), HAL_MAX_DELAY);
 			for(int i=0; i<10; i++){
-				HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-				HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
-				HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
+				TOGGLE_LEDS();
 				HAL_Delay(500);
 			}
 			state = INIT_LTS;
@@ -612,26 +624,23 @@ lts_error_t initPeripheral(void)
 {
 	// Init the display and show startup screen
 	if (SSD1306_Init() != 1) {
-		return DISPLAY_INIT;
+		HAL_Delay(500);
+		return DISPLAY_INIT_ERROR;
 	}
 	SSD1306_InitScreen();
 	// Init LEDs
-	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+	OFF_LEDS;
 	// Init the epc901
 	HAL_TIM_Base_Start(&htim9);
 	if (epc901_init() != 1) {
-		return EPC_INIT;
+		HAL_Delay(500);
+		return EPC_INIT_ERROR;
 	}
 	// init sucessfull
-	const char initData[32] = "\r\n\n-- LTS Init sucessfully --\r\n";
-	HAL_UART_Transmit(&huart1, (uint8_t *)initData , strlen(initData), HAL_MAX_DELAY);
-	HAL_UART_Transmit(&huart2, (uint8_t *)initData , strlen(initData), HAL_MAX_DELAY);
-	// Init sucessful
+	conn_writeData("\r\n\n-- LTS Init sucessfully --\r\n", 31, true, true);
 	HAL_Delay(2000);
 	SSD1306_Clear();
-	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	PWR_LED_ON;
 	return NO_ERROR;
 }
 

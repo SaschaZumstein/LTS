@@ -15,8 +15,10 @@
 #include "main.h"
 #include "epc901.h"
 #include "i2c.h"
+#include "conn.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 /********************************************************************************************/
 /* Defines                                                                       */
@@ -87,9 +89,8 @@ uint8_t epc901_init() {
 
 
 // Read the data of the epc901 ccd array
-HAL_StatusTypeDef epc901_getData(uint16_t shutterTime)
+HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData)
 {
-	uint16_t aquisitionData[NUM_OF_PIX] = {0};
 	uint8_t buffer[1];
 
 	if (I2C_Read_Register(EPC901_I2C_ADDRESS, CHIP_REV_NO_REG) == 0) {
@@ -122,11 +123,9 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime)
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_RESET);
 	}
-	
-	// Start of Frame
-	const char startData[13] = "START DATA\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t *)startData ,  strlen(startData), HAL_MAX_DELAY);
 
+	// Start of Frame
+	conn_writeData("START DATA\r\n", 13, false, true);
 	// Readout the data
 	for (int i = 0; i < NUM_OF_PIX; i++) {
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
@@ -136,27 +135,21 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime)
 	    HAL_ADC_Start(&hadc1);
 	    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 	    aquisitionData[i] = HAL_ADC_GetValue(&hadc1);
-		
-		// Send the Data to the Serial interface
-	    //printf("%d: %d\r\n", i, aquisitionData[i] >> 4);
-		// Faster with the HAL library than with the printf funktion
-	    buffer[0] = aquisitionData[i] >> 4;
-	    HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
+		buffer[0] = aquisitionData[i] >> 4;
+		HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
 	}
-	// End of Frame
-	const char endData[13] = "\r\nEND DATA\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t *)endData ,  strlen(endData), HAL_MAX_DELAY);
+	conn_writeData("\r\nEND DATA\r\n", 13, false, true);
 	return HAL_OK;
 }
 
-uint16_t epc901_calcDist(void){
+uint16_t epc901_calcDist(uint16_t *aquisitionData){
 	// TODO find maximum point and calc distance
-	static uint16_t dist = 300;
-	dist += 1;
-	if (dist > 1000) {
-		dist = 300;
-	}
-	return dist;
+	int min = 0;
+	int max = 0;
+	// Calculate high point
+	for(min=0; min < NUM_OF_PIX &&(aquisitionData[min]>>4) < 60; min++){}
+	for(max=min+1; max < NUM_OF_PIX && (aquisitionData[max]>>4) > 60; max++){}
+	return (int)(0.86f *(min+max)/2.0f)+300;
 }
 
 void usDelay(uint16_t delayTime_us)
