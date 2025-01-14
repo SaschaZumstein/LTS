@@ -15,7 +15,7 @@ import sys
 import time
 
 # Create object serial port
-portName = "COM7"
+portName = "COM4"
 baudrate = 115200
 ser = serial.Serial(portName,baudrate)
 
