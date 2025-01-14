@@ -639,18 +639,15 @@ lts_error_t initPeripheral(void)
 
 state_t error_state(lts_error_t error, bool bluetoothConnection, bool usbConnection)
 {
-	ON_LEDS;
 	switch(error){
 	case NO_ERROR:
-		state_t state;
+		OFF_LEDS;
 		if(LASER_SWITCH){
-			state = LASER_OFF;
+			return LASER_OFF;
 		}
 		else {
-			state = LASER_ON;
+			return LASER_ON;
 		}
-		OFF_LEDS;
-		return state;
 	case DISPLAY_INIT_ERROR:
 		conn_writeData("\r\n\n-- Display init failed --\r\n", 31, bluetoothConnection, usbConnection);
 		break;
@@ -668,9 +665,10 @@ state_t error_state(lts_error_t error, bool bluetoothConnection, bool usbConnect
 		SSD1306_PrintData("epc error","",bluetoothConnection,usbConnection);
 		break;
 	}
-	for(int i=0; i<10; i++){
-		TOGGLE_LEDS();
+	ON_LEDS;
+	for(int i=0; i<9; i++){
 		HAL_Delay(500);
+		TOGGLE_LEDS();
 	}
 	return INIT_LTS;
 }
