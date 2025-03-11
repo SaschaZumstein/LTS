@@ -31,43 +31,12 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef enum {
-	INIT_LTS, LASER_OFF, LASER_ON, LTS_ERROR
-} state_t;
-typedef enum {
-	NO_ERROR, EPC_INIT_ERROR, DISPLAY_INIT_ERROR, EPC_ERROR, DISPLAY_ERROR
-} lts_error_t;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define NUM_OF_PIX 1024
-#define LASER_SWITCH HAL_GPIO_ReadPin(LASER_PWR_GPIO_Port, LASER_PWR_Pin)
-#define PWR_LED_ON HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET)
-#define PWR_LED_OFF HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET)
-#define MEASURE_LED_ON HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET)
-#define MEASURE_LED_OFF HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET)
-#define LASER_LED_ON HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET)
-#define LASER_LED_OFF HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET)
-#define ON_LEDS { \
-	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET); \
-	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET); \
-	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET); \
-}
-#define OFF_LEDS { \
-	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); \
-	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET); \
-	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET); \
-}
-#define TOGGLE_LEDS(){ \
-    HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin); \
-    HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin); \
-    HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin); \
-}
-#define ENTRY() {\
-	SSD1306_Clear(); \
-	entry = true; \
-}
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -100,9 +69,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_TIM9_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
-lts_error_t initPeripheral(void);
-state_t error_state(lts_error_t error, bool bluetoothConnection,
-bool usbConnection);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -520,72 +487,6 @@ PUTCHAR_PROTOTYPE {
 	/* e.g. write a character to the USART2 and Loop until the end of transmission */
 	HAL_UART_Transmit(&huart2, (uint8_t*) &ch, 1, 0xFFFF);
 	return ch;
-}
-
-lts_error_t initPeripheral(void) {
-	// Init the display and show startup screen
-	if (SSD1306_Init() != 1) {
-		HAL_Delay(500);
-		return DISPLAY_INIT_ERROR;
-	}
-	SSD1306_InitScreen();
-	// Init LEDs
-	OFF_LEDS
-	;
-	// Init the epc901
-	HAL_TIM_Base_Start(&htim9);
-	if (epc901_init() != 1) {
-		HAL_Delay(500);
-		return EPC_INIT_ERROR;
-	}
-	// init sucessfull
-	conn_writeData("\r\n\n-- LTS Init sucessfully --\r\n", 31, true, true);
-	HAL_Delay(2000);
-	SSD1306_Clear();
-	PWR_LED_ON;
-	return NO_ERROR;
-}
-
-state_t error_state(lts_error_t error, bool bluetoothConnection,
-bool usbConnection) {
-	switch (error) {
-	case NO_ERROR:
-		OFF_LEDS
-		;
-		if (LASER_SWITCH) {
-			return LASER_OFF;
-		} else {
-			return LASER_ON;
-		}
-	case DISPLAY_INIT_ERROR:
-		conn_writeData("\r\n\n-- Display init failed --\r\n", 31,
-				bluetoothConnection, usbConnection);
-		break;
-	case EPC_INIT_ERROR:
-		conn_writeData("\r\n\n-- epc init failed --\r\n", 27,
-				bluetoothConnection, usbConnection);
-		SSD1306_Clear();
-		SSD1306_PrintData("epc init", "failed", bluetoothConnection,
-				usbConnection);
-		break;
-	case DISPLAY_ERROR:
-		conn_writeData("\r\n\n-- Display error --\r\n", 25, bluetoothConnection,
-				usbConnection);
-		break;
-	case EPC_ERROR:
-		conn_writeData("\r\n\n-- epc error --\r\n", 21, bluetoothConnection,
-				usbConnection);
-		SSD1306_Clear();
-		SSD1306_PrintData("epc error", "", bluetoothConnection, usbConnection);
-		break;
-	}
-	ON_LEDS
-	;
-	for (int i = 0; i < 9; i++) {
-		HAL_Delay(500);
-		TOGGLE_LEDS();
-	}
-	return INIT_LTS;
 }
 
 /* USER CODE END 4 */
