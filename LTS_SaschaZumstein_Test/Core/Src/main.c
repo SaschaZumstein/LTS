@@ -102,7 +102,7 @@ static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 lts_error_t initPeripheral(void);
 state_t error_state(lts_error_t error, bool bluetoothConnection,
-		bool usbConnection);
+bool usbConnection);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -124,7 +124,12 @@ state_t error_state(lts_error_t error, bool bluetoothConnection,
 int main(void) {
 
 	/* USER CODE BEGIN 1 */
-
+	uint16_t distance = 300;
+	char distStr[11];
+	uint16_t shutterTime = 100;
+	bool bluetoothConnection = false;
+	bool usbConnection = false;
+	uint16_t measureData[NUM_OF_PIX] = { 0 };
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -152,16 +157,31 @@ int main(void) {
 	MX_TIM9_Init();
 	MX_TIM3_Init();
 	/* USER CODE BEGIN 2 */
+	/* Init all peripherals */
+	SSD1306_Init();
+	SSD1306_InitScreen();
+	HAL_TIM_Base_Start(&htim9);
+	epc901_init();
+	conn_writeData("\r\n\n-- LTS Init sucessfully --\r\n", 31, true, true);
+	HAL_Delay(2000);
+	SSD1306_Clear();
+
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-
+		epc901_getData(shutterTime, measureData);
+		distance = epc901_calcDist(measureData);
+		sprintf(distStr, "%4d mm", distance);
+		SSD1306_PrintData("Distanz:",distStr,bluetoothConnection,usbConnection);
+		strcat(distStr,"\r\n");
+		conn_writeData(distStr, 9, bluetoothConnection, usbConnection);
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
+		HAL_Delay(10);
 	}
 	/* USER CODE END 3 */
 }
@@ -527,7 +547,7 @@ lts_error_t initPeripheral(void) {
 }
 
 state_t error_state(lts_error_t error, bool bluetoothConnection,
-		bool usbConnection) {
+bool usbConnection) {
 	switch (error) {
 	case NO_ERROR:
 		OFF_LEDS
