@@ -54,7 +54,7 @@ def update():
     #Search for the Fram Start ("START")
     current_char = ser.readline()
     if len(current_char) > 6:
-        print(current_char[:5])
+        print(current_char)
     # check for the start string
     if current_char[:5] == b'START':
         #Read the whole frame
