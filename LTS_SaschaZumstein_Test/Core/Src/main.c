@@ -94,8 +94,6 @@ int main(void) {
 	uint16_t distance = 300;
 	char distStr[11];
 	uint16_t shutterTime = 100;
-	bool bluetoothConnection = false;
-	bool usbConnection = false;
 	uint16_t measureData[NUM_OF_PIX] = { 0 };
 	/* USER CODE END 1 */
 
@@ -112,7 +110,7 @@ int main(void) {
 	SystemClock_Config();
 
 	/* USER CODE BEGIN SysInit */
-
+	HAL_Delay(200);
 	/* USER CODE END SysInit */
 
 	/* Initialize all configured peripherals */
@@ -129,11 +127,15 @@ int main(void) {
 	SSD1306_InitScreen();
 	HAL_TIM_Base_Start(&htim9);
 	epc901_init();
-	conn_writeData("\r\n\n-- LTS Init sucessfully --\r\n", 31, true, true);
+	conn_writeData("\r\n\n-- LTS Init sucessfully --\r\n", 31);
 	HAL_Delay(2000);
 	SSD1306_Clear();
 
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+
+	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -142,9 +144,9 @@ int main(void) {
 		epc901_getData(shutterTime, measureData);
 		distance = epc901_calcDist(measureData);
 		sprintf(distStr, "%4d mm", distance);
-		SSD1306_PrintData("Distanz:",distStr,bluetoothConnection,usbConnection);
-		strcat(distStr,"\r\n");
-		conn_writeData(distStr, 9, bluetoothConnection, usbConnection);
+		SSD1306_PrintData("Distanz:", distStr);
+		strcat(distStr, "\r\n");
+		conn_writeData(distStr, 9);
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */

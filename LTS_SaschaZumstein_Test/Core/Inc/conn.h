@@ -11,9 +11,7 @@
 #include <stdbool.h>
 
 /* Private function prototypes -----------------------------------------------*/
-bool bluefruit_hasConnection();
-bool usb_hasConnection();
-void conn_writeData(const char *data, int length, bool bluetooth, bool usb);
+void conn_writeData(const char *data, int length);
 
 
 #endif /* CCD_EPC_H_ */

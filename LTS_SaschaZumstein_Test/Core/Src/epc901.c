@@ -125,7 +125,7 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData)
 	}
 
 	// Start of Frame
-	conn_writeData("START DATA\r\n", 12, false, true);
+	conn_writeData("START DATA\r\n", 12);
 	// Readout the data
 	for (int i = 0; i < NUM_OF_PIX; i++) {
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
@@ -138,7 +138,7 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData)
 		buffer[0] = aquisitionData[i] >> 4;
 		HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
 	}
-	conn_writeData("\r\nEND DATA\r\n", 12, false, true);
+	conn_writeData("\r\nEND DATA\r\n", 12);
 	return HAL_OK;
 }
 

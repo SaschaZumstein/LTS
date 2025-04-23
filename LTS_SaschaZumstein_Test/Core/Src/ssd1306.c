@@ -350,39 +350,23 @@ void SSD1306_DrawFilledRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
 
 void SSD1306_InitScreen(void)
 {
-	SSD1306_GotoXY(115,45);
+	SSD1306_GotoXY(115,40);
 	SSD1306_Puts("LTS Startup", &Font_11x18, 1);
 	SSD1306_GotoXY(115, 20);
 	SSD1306_Puts("Please Wait", &Font_11x18, 1);
 	SSD1306_UpdateScreen();
 }
 
-HAL_StatusTypeDef SSD1306_PrintData(char *firstLine, char *secondLine, bool bluetoothConnection, bool usbConnection)
+HAL_StatusTypeDef SSD1306_PrintData(char *firstLine, char *secondLine)
 {
 	if (HAL_I2C_IsDeviceReady(&hi2c1, SSD1306_I2C_ADDR, 1, 20000) != HAL_OK) {
 		return HAL_ERROR;
 	}
 
-	SSD1306_GotoXY(115,45);
+	SSD1306_GotoXY(115,40);
 	SSD1306_Puts(firstLine, &Font_11x18, 1);
-	SSD1306_GotoXY(115,25);
+	SSD1306_GotoXY(115,20);
 	SSD1306_Puts(secondLine, &Font_11x18, 1);
-	SSD1306_GotoXY(120,5);
-	SSD1306_Puts("USB:", &Font_7x10, 1);
-	if(usbConnection){
-		SSD1306_DrawFilledRectangle(88, 5, 10, 10, 1);
-	}
-	else {
-		SSD1306_DrawRectangle(88, 5, 10, 10, 1);
-	}
-	SSD1306_GotoXY(75, 5);
-	SSD1306_Puts("Bluetooth:", &Font_7x10, 1);
-	if(bluetoothConnection){
-		SSD1306_DrawFilledRectangle(1, 5, 10, 10, 1);
-	}
-	else{
-		SSD1306_DrawRectangle(1, 5, 10, 10, 1);
-	}
 	SSD1306_UpdateScreen();
 	return HAL_OK;
 }
