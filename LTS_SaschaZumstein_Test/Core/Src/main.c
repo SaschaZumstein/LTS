@@ -94,7 +94,9 @@ int main(void) {
 	uint16_t distance = 300;
 	char distStr[11];
 	uint16_t shutterTime = 100;
-	uint16_t measureData[NUM_OF_PIX] = { 0 };
+	uint16_t measureData[NUM_OF_PIX] = {0};
+	uint16_t minVal = UINT16_MAX;
+	uint16_t maxVal = 0;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -141,8 +143,10 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		epc901_getData(shutterTime, measureData);
-		distance = epc901_calcDist(measureData);
+		epc901_getData(shutterTime, measureData, &minVal, &maxVal);
+		// TODO regulate shutter time
+		//epc901_regulateShutterTime(&shutterTime, &maxVal);
+		distance = epc901_calcDist(measureData, &minVal, &maxVal);
 		sprintf(distStr, "%4d mm", distance);
 		SSD1306_PrintData("Distanz:", distStr);
 		strcat(distStr, "\r\n");

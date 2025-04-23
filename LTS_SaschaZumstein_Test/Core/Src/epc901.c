@@ -89,9 +89,11 @@ uint8_t epc901_init() {
 
 
 // Read the data of the epc901 ccd array
-HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData)
+HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal)
 {
-	uint8_t buffer[1];
+	// reset min and max value
+	(*minVal) = UINT16_MAX;
+	(*maxVal) = 0;
 
 	if (I2C_Read_Register(EPC901_I2C_ADDRESS, CHIP_REV_NO_REG) == 0) {
 		return HAL_ERROR;
@@ -123,9 +125,6 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData)
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_RESET);
 	}
-
-	// Start of Frame
-	conn_writeData("START DATA\r\n", 12);
 	// Readout the data
 	for (int i = 0; i < NUM_OF_PIX; i++) {
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
@@ -135,21 +134,53 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData)
 	    HAL_ADC_Start(&hadc1);
 	    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 	    aquisitionData[i] = HAL_ADC_GetValue(&hadc1);
+
+	    // search for min and max value
+		if((*minVal) > aquisitionData[i]){
+			(*minVal) = aquisitionData[i];
+		}
+		if((*maxVal) < aquisitionData[i]){
+			(*maxVal) = aquisitionData[i];
+		}
+	}
+	return HAL_OK;
+}
+
+uint16_t epc901_calcDist(uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal){
+	uint8_t buffer[1];
+	uint16_t minMaxMiddle = ((*maxVal)+(*minVal))/2;
+	uint32_t weightedSum = 0;
+	uint32_t sum = 0;
+	float centerOfGravity = 0.0;
+
+	// Start of Frame
+	conn_writeData("START DATA\r\n", 12);
+	for (int i = 0; i < NUM_OF_PIX; i++) {
+		// extract the laser beam from noise
+		if(aquisitionData[i] < minMaxMiddle){
+			aquisitionData[i] = 0;
+		}
+
+		// calculate the center of gravity of the beam
+		weightedSum += i*aquisitionData[i];
+		sum += aquisitionData[i];
+
+		// transmit the data
 		buffer[0] = aquisitionData[i] >> 4;
 		HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
 	}
 	conn_writeData("\r\nEND DATA\r\n", 12);
-	return HAL_OK;
+	centerOfGravity = (float)weightedSum/sum;
+
+	// TODO calibration
+	return (uint16_t)(centerOfGravity + 0.5f);
 }
 
-uint16_t epc901_calcDist(uint16_t *aquisitionData){
-	// TODO find maximum point and calc distance
-	int min = 0;
-	int max = 0;
-	// Calculate high point
-	for(min=0; min < NUM_OF_PIX &&(aquisitionData[min]>>4) < 60; min++){}
-	for(max=min+1; max < NUM_OF_PIX && (aquisitionData[max]>>4) > 60; max++){}
-	return (int)(0.86f *(min+max)/2.0f)+300;
+void epc901_regulateShutterTime(uint16_t *shutterTime, uint16_t *maxVal)
+{
+	if(((*maxVal)>>4) < 110 && (*shutterTime) < 800) {
+		(*shutterTime) += 100;
+	}
 }
 
 void usDelay(uint16_t delayTime_us)
