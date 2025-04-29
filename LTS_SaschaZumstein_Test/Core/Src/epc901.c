@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <math.h>
 
 /********************************************************************************************/
 /* Defines                                                                       */
@@ -151,7 +152,20 @@ uint16_t epc901_calcDist(uint16_t *aquisitionData, uint16_t *minVal, uint16_t *m
 	uint16_t minMaxMiddle = ((*maxVal)+(*minVal))/2;
 	uint32_t weightedSum = 0;
 	uint32_t sum = 0;
-	float centerOfGravity = 0.0;
+	double cog = 0.0;
+
+	// fit parameter
+	double a = -3.11767119e-25;
+	double b = 1.49183346e-21;
+	double c = -3.02357839e-18;
+	double d = 3.39036248e-15;
+	double e = -2.30213278e-12;
+	double f = 9.74279304e-10;
+	double g = -2.54731085e-07;
+	double h = 3.96967745e-05;
+	double i = -3.18417563e-03;
+	double j = 3.50999221e-01;
+	double k = 2.54416652e+02;
 
 	// Start of Frame
 	conn_writeData("START DATA\r\n", 12);
@@ -170,10 +184,9 @@ uint16_t epc901_calcDist(uint16_t *aquisitionData, uint16_t *minVal, uint16_t *m
 		HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
 	}
 	conn_writeData("\r\nEND DATA\r\n", 12);
-	centerOfGravity = (float)weightedSum/sum;
+	cog = (double)weightedSum/sum;
 
-	// TODO calibration
-	return (uint16_t)(centerOfGravity + 0.5f);
+	return (uint16_t)(a*pow(cog,10)+b*pow(cog,9)+c*pow(cog,8)+d*pow(cog,7)+e*pow(cog,6)+f*pow(cog,5)+g*pow(cog,4)+h*pow(cog,3)+i*pow(cog,2)+j*cog+k);
 }
 
 void epc901_regulateShutterTime(uint16_t *shutterTime, uint16_t *maxVal)

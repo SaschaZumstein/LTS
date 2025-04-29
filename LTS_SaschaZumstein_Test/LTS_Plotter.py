@@ -11,13 +11,19 @@ from numpy import *
 from PyQt5 import QtWidgets  
 import pyqtgraph as pg
 import serial
-import sys
-import time
+import csv
+import keyboard
 
 # Create object serial port
-portName = "COM7"
+portName = "COM4"
 baudrate = 115200
 ser = serial.Serial(portName,baudrate)
+
+filename = "LTS_CurveData.csv"
+
+save_next_frame = False
+
+i = 1
 
 ### START QtApp #####
 app = QtWidgets.QApplication([]) # you MUST do this once (initialize things)
@@ -47,14 +53,40 @@ win.setWindowTitle('pyqtgraph example: Plotting LTS Data')
 win.show()
 win.activateWindow()
 
+def write_csv(current_char):
+    global i
+
+    with open(filename, mode='r', newline='') as file:
+        reader = csv.reader(file)
+        rows = list(reader)
+
+    rows[i][0] = current_char[0:5].decode('utf-8')
+    i += 1
+
+    # Die geänderten Daten wieder in die CSV-Datei schreiben
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(rows)
+     
+
 # Realtime data plot. Each time this function is called, the data display is updated
 def update():
     global curve#global variable for the vcurve
+    global save_next_frame
+
+    if keyboard.is_pressed('s') and not save_next_frame:
+        print("Taste S gedrückt – nächste Messung wird gespeichert.")
+        save_next_frame = True
     
     #Search for the Fram Start ("START")
     current_char = ser.readline()
     if len(current_char) > 6:
         print(current_char[:7])
+    if save_next_frame and current_char[5:7] == b'mm':
+        write_csv(current_char)
+        print("Messung gespeichert.")
+        save_next_frame = False
+
     # check for the start string
     if current_char[:5] == b'START':
         #Read the whole frame
