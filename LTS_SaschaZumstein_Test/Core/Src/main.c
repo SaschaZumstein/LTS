@@ -26,6 +26,7 @@
 #include "ssd1306.h"
 #include "conn.h"
 #include "epc901.h"
+#include "signalProcessing.h"
 
 /* USER CODE END Includes */
 
@@ -36,7 +37,15 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define NUM_OF_PIX 1024
+#define NUM_OF_PIX 		1024
+#define LASER_ON 		HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+#define LASER_OFF		HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
+#define LED_PWR_ON		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+#define LED_PWR_OFF		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+#define LED_ERROR_ON	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+#define LED_ERROR_OFF	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+#define LED_MEASURE_ON	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+#define LED_MEASURE_OFF	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -97,6 +106,8 @@ int main(void) {
 	uint16_t measureData[NUM_OF_PIX] = {0};
 	uint16_t minVal = UINT16_MAX;
 	uint16_t maxVal = 0;
+	uint16_t meanVal = 0;
+	uint16_t baseline = 0;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -112,7 +123,7 @@ int main(void) {
 	SystemClock_Config();
 
 	/* USER CODE BEGIN SysInit */
-	HAL_Delay(200);
+	HAL_Delay(200); // delay to ensure that the display startup works correctly
 	/* USER CODE END SysInit */
 
 	/* Initialize all configured peripherals */
@@ -133,20 +144,27 @@ int main(void) {
 	HAL_Delay(2000);
 	SSD1306_Clear();
 
-	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-
-	HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+	LED_PWR_ON
+	LED_ERROR_ON
+	LED_MEASURE_ON
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		epc901_getData(shutterTime, measureData, &minVal, &maxVal);
-		// TODO regulate shutter time
-		//epc901_regulateShutterTime(&shutterTime, &maxVal);
-		distance = epc901_calcDist(measureData, &minVal, &maxVal);
+		// get data without laser
+		epc901_getData(shutterTime, measureData, &minVal, &maxVal, &baseline);
+		// start laser and get data with laser
+		LASER_ON
+		epc901_getData(shutterTime, measureData, &minVal, &maxVal, &meanVal);
+		LASER_OFF
+		// regulate shutter time
+		epc901_regulateShutterTime(&shutterTime, maxVal, baseline);
+		printf("Shutter Time: %u", shutterTime);
+		// calculate and send distance¨
+		// TODO fehlermessungen abfangen
+		distance = sigProc_calcDist(measureData, ((maxVal+minVal)/2));
+		// TODO ausgabe bearbeiten
 		sprintf(distStr, "%4d mm", distance);
 		SSD1306_PrintData("Distanz:", distStr);
 		strcat(distStr, "\r\n");

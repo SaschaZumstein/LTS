@@ -5,14 +5,13 @@
  *      Author: Gion-Pol Catregn (FHGR)
  */
 
-#ifndef CCD_EPC_H_
-#define CCD_EPC_H_
+#ifndef EPC_901_H_
+#define EPC_901_H_
 
 /* Private function prototypes -----------------------------------------------*/
 uint8_t epc901_init();
-HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal);
-uint16_t epc901_calcDist(uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal);
-void epc901_regulateShutterTime(uint16_t *shutterTime, uint16_t *maxVal);
+HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal, uint16_t *meanVal);
+void epc901_regulateShutterTime(uint16_t *shutterTime, uint16_t maxVal, uint16_t baseline);
 void usDelay(uint16_t delayTime_us);
 
-#endif /* CCD_EPC_H_ */
+#endif /* EPC_901_H_ */
