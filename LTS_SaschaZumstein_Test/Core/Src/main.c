@@ -107,7 +107,7 @@ int main(void) {
 	uint16_t minVal = UINT16_MAX;
 	uint16_t maxVal = 0;
 	uint16_t meanVal = 0;
-	uint16_t baseline = 0;
+	uint16_t baseline = 30<<4;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -156,11 +156,12 @@ int main(void) {
 		epc901_getData(shutterTime, measureData, &minVal, &maxVal, &baseline);
 		// start laser and get data with laser
 		LASER_ON
+		HAL_Delay(2); // ensure that the laser is on before the measurement is taken
 		epc901_getData(shutterTime, measureData, &minVal, &maxVal, &meanVal);
 		LASER_OFF
 		// regulate shutter time
 		epc901_regulateShutterTime(&shutterTime, maxVal, baseline);
-		printf("Shutter Time: %u", shutterTime);
+		printf("Shutter Time: %u\r\n", shutterTime);
 		// calculate and send distance¨
 		// TODO fehlermessungen abfangen
 		distance = sigProc_calcDist(measureData, ((maxVal+minVal)/2));

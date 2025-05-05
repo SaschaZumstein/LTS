@@ -92,6 +92,7 @@ uint8_t epc901_init() {
 HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal, uint16_t *meanVal)
 {
 	uint32_t sum = 0;
+	uint8_t buffer[1];
 	// reset min, max and mean value
 	(*minVal) = UINT16_MAX;
 	(*maxVal) = 0;
@@ -127,6 +128,8 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData,
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_RESET);
 	}
+	// Start of Frame
+	conn_writeData("START DATA\r\n", 12);
 	// Readout the data
 	for (int i = 0; i < NUM_OF_PIX; i++) {
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
@@ -146,25 +149,31 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData,
 		}
 		// calc sum for mean value
 		sum += aquisitionData[i];
+
+		// transmit the data
+		buffer[0] = aquisitionData[i] >> 4;
+		HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
 	}
+	conn_writeData("\r\nEND DATA\r\n", 12);
 	(*meanVal) = (uint16_t)((float)(sum)/NUM_OF_PIX + 0.5f);
 	return HAL_OK;
 }
 
 void epc901_regulateShutterTime(uint16_t *shutterTime, uint16_t maxVal, uint16_t baseline)
 {
-	static uint16_t shutterIndex = 2; // init value = 100
-	const uint16_t shutterValues[] = {10, 50, 100, 200, 500, 800, 1000};
-	const uint16_t shutterSize = sizeof(shutterValues) / sizeof(shutterValues[0]);
+	const uint16_t min_baseline = 30<<4;
+	const uint16_t max_baseline = 40<<4;
+	const uint16_t min_peak = 80<<4;
+	const uint16_t max_peak = 120<<4;
+	const uint16_t min_shutter = 100;
+	const uint16_t max_shutter = 1000;
 
-	if((baseline > 80 || maxVal > 120) && shutterIndex > 0){
-		shutterIndex--;
+	if((baseline > max_baseline || maxVal > max_peak) && (*shutterTime) > min_shutter){
+		(*shutterTime) -= 100;
 	}
-	else if (baseline < 60 && maxVal < 100 && shutterIndex < (shutterSize - 1)) {
-		shutterIndex++;
+	else if (baseline < min_baseline && maxVal < min_peak && (*shutterTime) < max_shutter) {
+		(*shutterTime) += 100;
 	}
-
-	(*shutterTime) = shutterValues[shutterIndex]; // set new shutter time
 }
 
 void usDelay(uint16_t delayTime_us)

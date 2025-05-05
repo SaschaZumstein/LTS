@@ -15,7 +15,7 @@ import csv
 import keyboard
 
 # Create object serial port
-portName = "COM4"
+portName = "COM7"
 baudrate = 115200
 ser = serial.Serial(portName,baudrate)
 
@@ -81,7 +81,8 @@ def update():
     #Search for the Fram Start ("START")
     current_char = ser.readline()
     if len(current_char) > 6:
-        print(current_char[:7])
+        if current_char[:7] == b'Shutter':
+            print(current_char[:18])
     if save_next_frame and current_char[5:7] == b'mm':
         write_csv(current_char)
         print("Messung gespeichert.")

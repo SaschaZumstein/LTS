@@ -31,7 +31,6 @@ extern UART_HandleTypeDef huart2;
 /* Functions                                                                        */
 /********************************************************************************************/
 uint16_t sigProc_calcDist(uint16_t *aquisitionData, uint16_t minMaxMiddle){
-	uint8_t buffer[1];
 	uint32_t weightedSum = 0;
 	uint32_t sum = 0;
 	double cog = 0.0;
@@ -49,8 +48,6 @@ uint16_t sigProc_calcDist(uint16_t *aquisitionData, uint16_t minMaxMiddle){
 	double j = 3.50999221e-01;
 	double k = 2.54416652e+02;
 
-	// Start of Frame
-	conn_writeData("START DATA\r\n", 12);
 	for (int i = 0; i < NUM_OF_PIX; i++) {
 		// extract the laser beam from noise
 		if(aquisitionData[i] < minMaxMiddle){
@@ -60,12 +57,7 @@ uint16_t sigProc_calcDist(uint16_t *aquisitionData, uint16_t minMaxMiddle){
 		// calculate the center of gravity of the beam
 		weightedSum += i*aquisitionData[i];
 		sum += aquisitionData[i];
-
-		// transmit the data
-		buffer[0] = aquisitionData[i] >> 4;
-		HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
 	}
-	conn_writeData("\r\nEND DATA\r\n", 12);
 	cog = (double)weightedSum/sum;
 
 	return (uint16_t)(a*pow(cog,10)+b*pow(cog,9)+c*pow(cog,8)+d*pow(cog,7)+e*pow(cog,6)+f*pow(cog,5)+g*pow(cog,4)+h*pow(cog,3)+i*pow(cog,2)+j*cog+k);
