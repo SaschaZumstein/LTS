@@ -30,35 +30,48 @@ extern UART_HandleTypeDef huart2;
 /********************************************************************************************/
 /* Functions                                                                        */
 /********************************************************************************************/
-uint16_t sigProc_calcDist(uint16_t *aquisitionData, uint16_t minMaxMiddle){
+uint16_t sigProc_calcDist(uint16_t *aquisitionData, uint16_t minMaxMiddle, uint16_t peakHeight){
 	uint32_t weightedSum = 0;
 	uint32_t sum = 0;
 	double cog = 0.0;
+	uint16_t distance = 0;
+
+	const uint16_t MIN_PEAK_HEIGHT = 15<<4;
+	const uint16_t MIN_DISTANCE = 260;
+	const uint16_t MAX_DISTANCE = 1200;
 
 	// fit parameter
-	double a = -3.11767119e-25;
-	double b = 1.49183346e-21;
-	double c = -3.02357839e-18;
-	double d = 3.39036248e-15;
-	double e = -2.30213278e-12;
-	double f = 9.74279304e-10;
-	double g = -2.54731085e-07;
-	double h = 3.96967745e-05;
-	double i = -3.18417563e-03;
-	double j = 3.50999221e-01;
-	double k = 2.54416652e+02;
+	const double A = -3.11767119e-25;
+	const double B = 1.49183346e-21;
+	const double C = -3.02357839e-18;
+	const double D = 3.39036248e-15;
+	const double E = -2.30213278e-12;
+	const double F = 9.74279304e-10;
+	const double G = -2.54731085e-07;
+	const double H = 3.96967745e-05;
+	const double I = -3.18417563e-03;
+	const double J = 3.50999221e-01;
+	const double K = 2.54416652e+02;
 
+	// no laser peak detected => error
+	if(peakHeight < MIN_PEAK_HEIGHT){
+		return UINT16_MAX;
+	}
+
+	// calculate the center of gravity of the beam
 	for (int i = 0; i < NUM_OF_PIX; i++) {
-		// extract the laser beam from noise
-		if(aquisitionData[i] < minMaxMiddle){
-			aquisitionData[i] = 0;
+		if(aquisitionData[i] >= minMaxMiddle){
+			weightedSum += i*aquisitionData[i];
+			sum += aquisitionData[i];
 		}
-
-		// calculate the center of gravity of the beam
-		weightedSum += i*aquisitionData[i];
-		sum += aquisitionData[i];
 	}
 	cog = (double)weightedSum/sum;
 
-	return (uint16_t)(a*pow(cog,10)+b*pow(cog,9)+c*pow(cog,8)+d*pow(cog,7)+e*pow(cog,6)+f*pow(cog,5)+g*pow(cog,4)+h*pow(cog,3)+i*pow(cog,2)+j*cog+k);
+	// calculate the distance with a calibrated polynomial
+	distance = (uint16_t)((((((((((A*cog+B)*cog+C)*cog+D)*cog+E)*cog+F)*cog+G)*cog+H)*cog+I)*cog+J)*cog+K);
+	// distance to high or to low
+	if(distance < MIN_DISTANCE || distance > MAX_DISTANCE){
+		return UINT16_MAX;
+	}
+	return distance;
 }

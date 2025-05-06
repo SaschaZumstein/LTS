@@ -155,24 +155,32 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData,
 		HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
 	}
 	conn_writeData("\r\nEND DATA\r\n", 12);
-	(*meanVal) = (uint16_t)((float)(sum)/NUM_OF_PIX + 0.5f);
+	(*meanVal) = (uint16_t)((float)(sum)/NUM_OF_PIX + 0.5f); // calc mean value
 	return HAL_OK;
 }
 
 void epc901_regulateShutterTime(uint16_t *shutterTime, uint16_t maxVal, uint16_t baseline)
 {
-	const uint16_t min_baseline = 30<<4;
-	const uint16_t max_baseline = 40<<4;
-	const uint16_t min_peak = 80<<4;
-	const uint16_t max_peak = 120<<4;
-	const uint16_t min_shutter = 100;
-	const uint16_t max_shutter = 1000;
+	const uint16_t MIN_BASELINE = 40<<4;
+	const uint16_t MAX_BASELINE = 50<<4;
+	const uint16_t MIN_PEAK = 80<<4;
+	const uint16_t MAX_PEAK = 120<<4;
+	const uint16_t MIN_SHUTTER = 100;
+	const uint16_t MAX_SHUTTER = 1000;
+	const uint16_t SHUTTER_STEP = 100;
+	const uint16_t MIN_PEAK_HEIGHT = 15<<4;
 
-	if((baseline > max_baseline || maxVal > max_peak) && (*shutterTime) > min_shutter){
-		(*shutterTime) -= 100;
+	// no laser peak detected => increase shutter time
+	if(((maxVal-baseline) < MIN_PEAK_HEIGHT) && ((*shutterTime) < MAX_SHUTTER)) {
+			(*shutterTime) += SHUTTER_STEP;
 	}
-	else if (baseline < min_baseline && maxVal < min_peak && (*shutterTime) < max_shutter) {
-		(*shutterTime) += 100;
+	// baseline or peak to high => reduce shutter time
+	else if((baseline > MAX_BASELINE || maxVal > MAX_PEAK) && (*shutterTime) > MIN_SHUTTER){
+		(*shutterTime) -= SHUTTER_STEP;
+	}
+	// peak to low and baseline ok => increase shutter time
+	else if (baseline < MIN_BASELINE && maxVal < MIN_PEAK && (*shutterTime) < MAX_SHUTTER) {
+		(*shutterTime) += SHUTTER_STEP;
 	}
 }
 

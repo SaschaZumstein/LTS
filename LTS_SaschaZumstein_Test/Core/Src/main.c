@@ -101,7 +101,7 @@ int main(void) {
 
 	/* USER CODE BEGIN 1 */
 	uint16_t distance = 300;
-	char distStr[11];
+	char distStr[11]; // muss weg
 	uint16_t shutterTime = 100;
 	uint16_t measureData[NUM_OF_PIX] = {0};
 	uint16_t minVal = UINT16_MAX;
@@ -156,15 +156,13 @@ int main(void) {
 		epc901_getData(shutterTime, measureData, &minVal, &maxVal, &baseline);
 		// start laser and get data with laser
 		LASER_ON
-		HAL_Delay(2); // ensure that the laser is on before the measurement is taken
+		HAL_Delay(2); // ensure that the laser is on before the measurement
 		epc901_getData(shutterTime, measureData, &minVal, &maxVal, &meanVal);
 		LASER_OFF
-		// regulate shutter time
 		epc901_regulateShutterTime(&shutterTime, maxVal, baseline);
 		printf("Shutter Time: %u\r\n", shutterTime);
-		// calculate and send distance¨
-		// TODO fehlermessungen abfangen
-		distance = sigProc_calcDist(measureData, ((maxVal+minVal)/2));
+		// calculate distance
+		distance = sigProc_calcDist(measureData, ((maxVal+minVal)/2), maxVal-baseline);
 		// TODO ausgabe bearbeiten
 		sprintf(distStr, "%4d mm", distance);
 		SSD1306_PrintData("Distanz:", distStr);
