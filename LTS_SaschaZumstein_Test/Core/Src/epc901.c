@@ -7,11 +7,9 @@
   * 25.02.2021 V1.0 Initial Version
 */
 
-
 /********************************************************************************************/
 /* Includes                                                                                 */
 /********************************************************************************************/
-
 #include "main.h"
 #include "epc901.h"
 #include "i2c.h"
@@ -48,12 +46,12 @@ extern TIM_HandleTypeDef htim9;
 /* Functions                                                                        */
 /********************************************************************************************/
 // Initialization of the epc901 ccd Array
-uint8_t epc901_init() {
+HAL_StatusTypeDef epc901_init() {
 	// Contains value of the read register
 	uint8_t readByte = 0;
 
 	if(I2C_Reset_epc901() != HAL_OK){
-		return 0;
+		return HAL_ERROR;
 	}
 
     // Read some Registers
@@ -73,7 +71,7 @@ uint8_t epc901_init() {
 	// Check if charge pump is off
 	if (readByte != 0x03)
 	{
-		return 0;
+		return HAL_ERROR;
 	}
 
 	// Use the programmed configuration bits and not the pins
@@ -84,15 +82,13 @@ uint8_t epc901_init() {
 	I2C_Write_Register(EPC901_I2C_ADDRESS, ACQ_TX_CONF_I2C, 0x15);
 	readByte = I2C_Read_Register(EPC901_I2C_ADDRESS, ACQ_TX_CONF_I2C);
 
-	return 1;
+	return HAL_OK;
 }
-
 
 // Read the data of the epc901 ccd array
 HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal, uint16_t *meanVal)
 {
 	uint32_t sum = 0;
-	uint8_t buffer[1];
 	// reset min, max and mean value
 	(*minVal) = UINT16_MAX;
 	(*maxVal) = 0;
@@ -128,15 +124,15 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData,
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_RESET);
 	}
-	// Start of Frame
-	conn_writeData("START DATA\r\n", 12);
 	// Readout the data
 	for (int i = 0; i < NUM_OF_PIX; i++) {
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_RESET);
 
 	    // Get ADC value
-	    HAL_ADC_Start(&hadc1);
+	    if(HAL_ADC_Start(&hadc1) != HAL_OK){
+	    	return HAL_ERROR;
+	    }
 	    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 	    aquisitionData[i] = HAL_ADC_GetValue(&hadc1);
 
@@ -149,12 +145,7 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData,
 		}
 		// calc sum for mean value
 		sum += aquisitionData[i];
-
-		// transmit the data
-		buffer[0] = aquisitionData[i] >> 4;
-		HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
 	}
-	conn_writeData("\r\nEND DATA\r\n", 12);
 	(*meanVal) = (uint16_t)((float)(sum)/NUM_OF_PIX + 0.5f); // calc mean value
 	return HAL_OK;
 }
@@ -172,7 +163,7 @@ void epc901_regulateShutterTime(uint16_t *shutterTime, uint16_t maxVal, uint16_t
 
 	// no laser peak detected => increase shutter time
 	if(((maxVal-baseline) < MIN_PEAK_HEIGHT) && ((*shutterTime) < MAX_SHUTTER)) {
-			(*shutterTime) += SHUTTER_STEP;
+		(*shutterTime) += SHUTTER_STEP;
 	}
 	// baseline or peak to high => reduce shutter time
 	else if((baseline > MAX_BASELINE || maxVal > MAX_PEAK) && (*shutterTime) > MIN_SHUTTER){

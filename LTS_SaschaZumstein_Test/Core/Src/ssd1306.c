@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include "signalProcessing.h"
 
 
 extern I2C_HandleTypeDef hi2c1;
@@ -376,7 +377,6 @@ void SSD1306_Clear (void)
 	SSD1306_Fill (0);
     SSD1306_UpdateScreen();
 }
-
 
 void ssd1306_I2C_WriteMulti(uint8_t address, uint8_t reg, uint8_t* data, uint16_t count) {
 uint8_t dt[256];

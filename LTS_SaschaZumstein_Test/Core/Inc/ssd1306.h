@@ -190,7 +190,7 @@ void ssd1306_I2C_WriteMulti(uint8_t address, uint8_t reg, uint8_t *data, uint16_
 
 void SSD1306_InitScreen(void);
 
-HAL_StatusTypeDef SSD1306_PrintData(char *firstLine, char *secondLine);
+HAL_StatusTypeDef SSD1306_PrintData(char* firstLine, char* secondLine);
 
 // clear the display
 

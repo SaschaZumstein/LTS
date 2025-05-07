@@ -42,10 +42,10 @@
 #define LASER_OFF		HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_2);
 #define LED_PWR_ON		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
 #define LED_PWR_OFF		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-#define LED_ERROR_ON	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-#define LED_ERROR_OFF	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-#define LED_MEASURE_ON	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
-#define LED_MEASURE_OFF	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+#define LED_MEASURE_ON	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+#define LED_MEASURE_OFF	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+#define LED_ERROR_ON	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+#define LED_ERROR_OFF	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -101,13 +101,15 @@ int main(void) {
 
 	/* USER CODE BEGIN 1 */
 	uint16_t distance = 300;
-	char distStr[11]; // muss weg
+	char distStr[9];
 	uint16_t shutterTime = 100;
 	uint16_t measureData[NUM_OF_PIX] = {0};
 	uint16_t minVal = UINT16_MAX;
 	uint16_t maxVal = 0;
 	uint16_t meanVal = 0;
 	uint16_t baseline = 30<<4;
+	bool error = false;
+	uint8_t buffer[1]; // debug only
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -144,9 +146,17 @@ int main(void) {
 	HAL_Delay(2000);
 	SSD1306_Clear();
 
-	LED_PWR_ON
-	LED_ERROR_ON
-	LED_MEASURE_ON
+	if(error){
+		LED_PWR_OFF
+		LED_ERROR_ON
+		// delay damit watchdog auslöst
+	}
+	else{
+		LED_PWR_ON
+		LED_ERROR_OFF
+	}
+	LED_MEASURE_OFF
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -160,18 +170,41 @@ int main(void) {
 		epc901_getData(shutterTime, measureData, &minVal, &maxVal, &meanVal);
 		LASER_OFF
 		epc901_regulateShutterTime(&shutterTime, maxVal, baseline);
-		printf("Shutter Time: %u\r\n", shutterTime);
 		// calculate distance
 		distance = sigProc_calcDist(measureData, ((maxVal+minVal)/2), maxVal-baseline);
-		// TODO ausgabe bearbeiten
-		sprintf(distStr, "%4d mm", distance);
-		SSD1306_PrintData("Distanz:", distStr);
-		strcat(distStr, "\r\n");
-		conn_writeData(distStr, 9);
+
+		if(distance == UINT16_MAX){ // error in measurement
+			SSD1306_PrintData("Distance:", "Error ");
+			conn_writeData("Error in measurement\r\n", 22);
+			LED_MEASURE_OFF
+		}
+		else{ // measurement sucessfull
+			sprintf(distStr, "%4d mm", distance);
+			SSD1306_PrintData("Distance:", distStr);
+			conn_writeData(distStr, 7);
+			conn_writeData("\r\n", 2);
+			LED_MEASURE_ON
+		}
+		// send measure data via serial, debug only
+		conn_writeData("START DATA\r\n", 12);
+		for (int i = 0; i < NUM_OF_PIX; i++) {
+			// transmit the data weg
+			buffer[0] = measureData[i] >> 4;
+			HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
+		}
+		conn_writeData("\r\nEND DATA\r\n", 12);
+		if(error){
+			LED_PWR_OFF
+			LED_ERROR_ON
+			// delay damit watchdog auslöst
+		}
+		else{
+			LED_PWR_ON
+			LED_ERROR_OFF
+		}
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		HAL_Delay(10);
 	}
 	/* USER CODE END 3 */
 }

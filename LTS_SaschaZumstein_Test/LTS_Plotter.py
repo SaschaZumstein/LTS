@@ -81,8 +81,7 @@ def update():
     #Search for the Fram Start ("START")
     current_char = ser.readline()
     if len(current_char) > 6:
-        if current_char[:7] == b'Shutter':
-            print(current_char[:18])
+        print(current_char)
     if save_next_frame and current_char[5:7] == b'mm':
         write_csv(current_char)
         print("Messung gespeichert.")

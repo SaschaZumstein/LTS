@@ -8,15 +8,12 @@ This file contains some function for I2C communication
   * 27.02.2021 V1.0 Initial Version
 */
 
-
 /********************************************************************************************/
 /* Includes                                                                                 */
 /********************************************************************************************/
-
 #include <stdio.h>
 #include "main.h"
 #include "i2c.h"
-
 
 /********************************************************************************************/
 /* Local Variables                                                                          */
@@ -25,11 +22,9 @@ extern I2C_HandleTypeDef hi2c1;		// Handler for the I2C communication
 HAL_StatusTypeDef result;	// Variable for the HAL status
 uint8_t i2cBuf[32];			// I2C Buffer Array
 
-
 /********************************************************************************************/
  /* Functions                                                                               */
 /********************************************************************************************/
-
 // This Function reads one register over I2C
 // Parameters: Device address, Register to read
 // Return: The byte stored in the register
