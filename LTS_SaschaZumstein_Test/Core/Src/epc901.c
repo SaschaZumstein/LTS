@@ -150,7 +150,7 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData,
 	return HAL_OK;
 }
 
-void epc901_regulateShutterTime(uint16_t *shutterTime, uint16_t maxVal, uint16_t baseline)
+void epc901_adjustShutterTime(uint16_t *shutterTime, uint16_t maxVal, uint16_t baseline)
 {
 	const uint16_t MIN_BASELINE = 40<<4;
 	const uint16_t MAX_BASELINE = 50<<4;
@@ -162,7 +162,7 @@ void epc901_regulateShutterTime(uint16_t *shutterTime, uint16_t maxVal, uint16_t
 	const uint16_t MIN_PEAK_HEIGHT = 15<<4;
 
 	// no laser peak detected => increase shutter time
-	if(((maxVal-baseline) < MIN_PEAK_HEIGHT) && ((*shutterTime) < MAX_SHUTTER)) {
+	if((maxVal < baseline + MIN_PEAK_HEIGHT) && ((*shutterTime) < MAX_SHUTTER)) {
 		(*shutterTime) += SHUTTER_STEP;
 	}
 	// baseline or peak to high => reduce shutter time

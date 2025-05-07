@@ -169,9 +169,9 @@ int main(void) {
 		HAL_Delay(2); // ensure that the laser is on before the measurement
 		epc901_getData(shutterTime, measureData, &minVal, &maxVal, &meanVal);
 		LASER_OFF
-		epc901_regulateShutterTime(&shutterTime, maxVal, baseline);
+		epc901_adjustShutterTime(&shutterTime, maxVal, baseline);
 		// calculate distance
-		distance = sigProc_calcDist(measureData, ((maxVal+minVal)/2), maxVal-baseline);
+		distance = sigProc_calcDist(measureData, ((maxVal+minVal)/2), maxVal, baseline);
 
 		if(distance == UINT16_MAX){ // error in measurement
 			SSD1306_PrintData("Distance:", "Error ");
@@ -193,6 +193,7 @@ int main(void) {
 			HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
 		}
 		conn_writeData("\r\nEND DATA\r\n", 12);
+
 		if(error){
 			LED_PWR_OFF
 			LED_ERROR_ON
