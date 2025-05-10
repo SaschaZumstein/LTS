@@ -22,11 +22,13 @@ This file contains the initialization and the read and write functions for the b
 /********************************************************************************************/
 /* Functions                                                                        */
 /********************************************************************************************/
-uint16_t sigProc_calcDist(uint16_t *aquisitionData, uint16_t minMaxMiddle, uint16_t maxVal, uint16_t baseline){
+uint16_t sigProc_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxVal){
 	uint32_t weightedSum = 0;
 	uint32_t sum = 0;
 	double cog = 0.0;
 	uint16_t distance = 0;
+
+	const uint16_t minMaxMiddle = (minVal+maxVal)/2;
 
 	const uint16_t MIN_PEAK_HEIGHT = 15<<4;
 	const uint16_t MIN_DISTANCE = 260;
@@ -46,7 +48,7 @@ uint16_t sigProc_calcDist(uint16_t *aquisitionData, uint16_t minMaxMiddle, uint1
 	const double K = 2.54416652e+02;
 
 	// no laser peak detected => error
-	if(maxVal < baseline + MIN_PEAK_HEIGHT){
+	if(maxVal < minVal + MIN_PEAK_HEIGHT){
 		return UINT16_MAX;
 	}
 

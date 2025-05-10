@@ -86,13 +86,11 @@ HAL_StatusTypeDef epc901_init() {
 }
 
 // Read the data of the epc901 ccd array
-HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal, uint16_t *meanVal)
+HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal)
 {
-	uint32_t sum = 0;
 	// reset min, max and mean value
 	(*minVal) = UINT16_MAX;
 	(*maxVal) = 0;
-	(*meanVal) = 0;
 
 	if (I2C_Read_Register(EPC901_I2C_ADDRESS, CHIP_REV_NO_REG) == 0) {
 		return HAL_ERROR;
@@ -143,36 +141,47 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData,
 		if((*maxVal) < aquisitionData[i]){
 			(*maxVal) = aquisitionData[i];
 		}
-		// calc sum for mean value
-		sum += aquisitionData[i];
 	}
-	(*meanVal) = (uint16_t)((float)(sum)/NUM_OF_PIX + 0.5f); // calc mean value
 	return HAL_OK;
 }
 
-void epc901_adjustShutterTime(uint16_t *shutterTime, uint16_t maxVal, uint16_t baseline)
+void epc901_adjustShutterTime(uint16_t *shutterTime, uint16_t minVal, uint16_t maxVal)
 {
-	const uint16_t MIN_BASELINE = 40<<4;
-	const uint16_t MAX_BASELINE = 50<<4;
+	const uint16_t shutterList[] = {10, 20, 50, 100, 200, 500, 1000};
+	static uint16_t shutterIndex = 3;
+
+	const uint16_t MIN_BASELINE_PEAK = 40<<4;
+	const uint16_t MAX_BASELINE_PEAK = 50<<4;
+	const uint16_t MIN_BASELINE_NO_PEAK = 95<<4;
+	const uint16_t MAX_BASELINE_NO_PEAK = 105<<4;
 	const uint16_t MIN_PEAK = 80<<4;
 	const uint16_t MAX_PEAK = 120<<4;
-	const uint16_t MIN_SHUTTER = 100;
-	const uint16_t MAX_SHUTTER = 1000;
-	const uint16_t SHUTTER_STEP = 100;
 	const uint16_t MIN_PEAK_HEIGHT = 15<<4;
+	const uint16_t MIN_SHUTTER = 0;
+	const uint16_t MAX_SHUTTER = 6;
 
-	// no laser peak detected => increase shutter time
-	if((maxVal < baseline + MIN_PEAK_HEIGHT) && ((*shutterTime) < MAX_SHUTTER)) {
-		(*shutterTime) += SHUTTER_STEP;
+	// no peak detected => bring baseline to ca. 100
+	if(maxVal < minVal + MIN_PEAK_HEIGHT) {
+		if(minVal < MIN_BASELINE_NO_PEAK && shutterIndex < MAX_SHUTTER){
+			shutterIndex++;
+		}
+		else if(minVal > MAX_BASELINE_NO_PEAK && shutterIndex > MIN_SHUTTER){
+			shutterIndex--;
+		}
 	}
-	// baseline or peak to high => reduce shutter time
-	else if((baseline > MAX_BASELINE || maxVal > MAX_PEAK) && (*shutterTime) > MIN_SHUTTER){
-		(*shutterTime) -= SHUTTER_STEP;
+	// peak detected => search optimum peak to baseline ratio
+	else {
+		// baseline or peak to high => reduce shutter time
+		if((minVal > MAX_BASELINE_PEAK || maxVal > MAX_PEAK) && shutterIndex > MIN_SHUTTER){
+			shutterIndex--;
+		}
+		// peak to low and baseline ok => increase shutter time
+		else if (minVal < MIN_BASELINE_PEAK && maxVal < MIN_PEAK && shutterIndex < MAX_SHUTTER) {
+			shutterIndex++;
+		}
 	}
-	// peak to low and baseline ok => increase shutter time
-	else if (baseline < MIN_BASELINE && maxVal < MIN_PEAK && (*shutterTime) < MAX_SHUTTER) {
-		(*shutterTime) += SHUTTER_STEP;
-	}
+	// calculate new shutter time
+	(*shutterTime) = shutterList[shutterIndex];
 }
 
 void usDelay(uint16_t delayTime_us)

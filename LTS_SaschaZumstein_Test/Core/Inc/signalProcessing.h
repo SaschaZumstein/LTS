@@ -9,7 +9,7 @@
 #define SIGNALPROCESSING_H
 
 /* Private function prototypes -----------------------------------------------*/
-uint16_t sigProc_calcDist(uint16_t *aquisitionData, uint16_t minMaxMiddle, uint16_t maxVal, uint16_t baseline);
+uint16_t sigProc_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxVal);
 
 
 #endif /* SIGNALPROCESSING_H */

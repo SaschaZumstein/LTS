@@ -98,7 +98,6 @@ static void MX_TIM3_Init(void);
  * @retval int
  */
 int main(void) {
-
 	/* USER CODE BEGIN 1 */
 	uint16_t distance = 300;
 	char distStr[9];
@@ -106,10 +105,9 @@ int main(void) {
 	uint16_t measureData[NUM_OF_PIX] = {0};
 	uint16_t minVal = UINT16_MAX;
 	uint16_t maxVal = 0;
-	uint16_t meanVal = 0;
-	uint16_t baseline = 30<<4;
 	bool error = false;
-	uint8_t buffer[1]; // debug only
+	uint8_t buffer[1];
+	bool debugMode = true;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -147,34 +145,31 @@ int main(void) {
 	SSD1306_Clear();
 
 	if(error){
+		LASER_OFF
 		LED_PWR_OFF
 		LED_ERROR_ON
 		// delay damit watchdog auslöst
 	}
 	else{
+		LASER_ON
 		LED_PWR_ON
 		LED_ERROR_OFF
 	}
 	LED_MEASURE_OFF
-
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		// get data without laser
-		epc901_getData(shutterTime, measureData, &minVal, &maxVal, &baseline);
-		// start laser and get data with laser
-		LASER_ON
-		HAL_Delay(2); // ensure that the laser is on before the measurement
-		epc901_getData(shutterTime, measureData, &minVal, &maxVal, &meanVal);
-		LASER_OFF
-		epc901_adjustShutterTime(&shutterTime, maxVal, baseline);
+		// get the data from the epc901
+		epc901_getData(shutterTime, measureData, &minVal, &maxVal);
+		// regulate shutter time
+		epc901_adjustShutterTime(&shutterTime, minVal, maxVal);
 		// calculate distance
-		distance = sigProc_calcDist(measureData, ((maxVal+minVal)/2), maxVal, baseline);
+		distance = sigProc_calcDist(measureData, minVal, maxVal);
 
 		if(distance == UINT16_MAX){ // error in measurement
-			SSD1306_PrintData("Distance:", "Error ");
+			SSD1306_PrintData("Distance:", "Error  ");
 			conn_writeData("Error in measurement\r\n", 22);
 			LED_MEASURE_OFF
 		}
@@ -185,23 +180,24 @@ int main(void) {
 			conn_writeData("\r\n", 2);
 			LED_MEASURE_ON
 		}
-		// send measure data via serial, debug only
-		conn_writeData("START DATA\r\n", 12);
-		for (int i = 0; i < NUM_OF_PIX; i++) {
-			// transmit the data weg
-			buffer[0] = measureData[i] >> 4;
-			HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
-		}
-		conn_writeData("\r\nEND DATA\r\n", 12);
 
 		if(error){
+			LASER_OFF
 			LED_PWR_OFF
 			LED_ERROR_ON
 			// delay damit watchdog auslöst
 		}
-		else{
-			LED_PWR_ON
-			LED_ERROR_OFF
+
+		// send shutter time and measured data via serial only in debug mode
+		if(debugMode){
+			printf("Shutter Time: %u\r\n", shutterTime);
+			conn_writeData("START DATA\r\n", 12);
+			for (int i = 0; i < NUM_OF_PIX; i++) {
+				// transmit the data weg
+				buffer[0] = measureData[i] >> 4;
+				HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
+			}
+			conn_writeData("\r\nEND DATA\r\n", 12);
 		}
 		/* USER CODE END WHILE */
 
