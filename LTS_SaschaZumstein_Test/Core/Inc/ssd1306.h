@@ -71,7 +71,7 @@ typedef enum {
  *           - 0: LCD was not detected on I2C port
  *           - > 0: LCD initialized OK and ready to use
  */
-uint8_t SSD1306_Init(void);
+HAL_StatusTypeDef SSD1306_Init(void);
 
 /** 
  * @brief  Updates buffer from internal RAM to LCD
@@ -187,8 +187,6 @@ void ssd1306_I2C_Write(uint8_t address, uint8_t reg, uint8_t data);
  * @retval None
  */
 void ssd1306_I2C_WriteMulti(uint8_t address, uint8_t reg, uint8_t *data, uint16_t count);
-
-void SSD1306_InitScreen(void);
 
 HAL_StatusTypeDef SSD1306_PrintData(char* firstLine, char* secondLine);
 

@@ -1,32 +1,33 @@
-/*This file contains the initialization and readout of the epc901 ccd array
+/**
+ * @file 	epc901.c
+ * @brief 	Driver implementation for epc901 line sensor
+ *
+ * @author 	Gion-Pol Catregn (FHGR)
+ * @author 	Sascha Zumstein (FHGR)
+ * @date 	Last modified: 12.05.2025
+ * @version 1.0
+ */
 
-  * Author: Gion-Pol Catregn (FHGR)
-  * Date: 25.02.2021
-  * Version: 1.0
-  * Changes:
-  * 25.02.2021 V1.0 Initial Version
-*/
-
-/********************************************************************************************/
+/*------------------------------------------------------------------------------------------*/
 /* Includes                                                                                 */
-/********************************************************************************************/
+/*------------------------------------------------------------------------------------------*/
 #include "main.h"
 #include "epc901.h"
 #include "i2c.h"
-#include "conn.h"
 #include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
 
-/********************************************************************************************/
-/* Defines                                                                       */
-/********************************************************************************************/
-#define EPC901_I2C_ADDRESS 0x15<<1
-#define NUM_OF_PIX 1024
+/*------------------------------------------------------------------------------------------*/
+/* Defines                                                                                  */
+/*------------------------------------------------------------------------------------------*/
+#define EPC901_I2C_ADDRESS 0x15<<1 	// I2C address of epc901
+#define NUM_OF_PIX 1024 			// Number of pixels in EPC901 sensor
 
-/********************************************************************************************/
-/* Type Definitions                                                                        */
-/********************************************************************************************/
+/*------------------------------------------------------------------------------------------*/
+/* Typedefs                                                                                 */
+/*------------------------------------------------------------------------------------------*/
+/**
+ * @brief 	Register map for EPC901 configuration via I2C
+ */
 typedef enum
 {
 	ACQ_TX_CONF_I2C			= 0x00,
@@ -38,17 +39,21 @@ typedef enum
 	CHIP_REV_NO_REG			= 0xFF
 }CCD_CONFIG_REG;
 
+/*------------------------------------------------------------------------------------------*/
+/* External Handles                                                                         */
+/*------------------------------------------------------------------------------------------*/
 extern ADC_HandleTypeDef hadc1;
-extern UART_HandleTypeDef huart2;
 extern TIM_HandleTypeDef htim9;
 
-/********************************************************************************************/
-/* Functions                                                                        */
-/********************************************************************************************/
-// Initialization of the epc901 ccd Array
+/*------------------------------------------------------------------------------------------*/
+/* Functions                                                                                */
+/*------------------------------------------------------------------------------------------*/
+/**
+ * @brief 	Initializes the epc901 sensor via I2C
+ * @return 	HAL_OK on success, HAL_ERROR otherwise
+ */
 HAL_StatusTypeDef epc901_init() {
-	// Contains value of the read register
-	uint8_t readByte = 0;
+	uint8_t readByte = 0; // Contains value of the read register
 
 	if(I2C_Reset_epc901() != HAL_OK){
 		return HAL_ERROR;
@@ -85,10 +90,17 @@ HAL_StatusTypeDef epc901_init() {
 	return HAL_OK;
 }
 
-// Read the data of the epc901 ccd array
+/**
+ * @brief 	Read out the data from the epc901 sensor
+ * @param 	shutterTime: Exposure time in microseconds
+ * @param 	acquisitionData: Pointer to buffer for raw pixel values (1024 values)
+ * @param 	minVal: Pointer to return minimum pixel value
+ * @param 	maxVal: Pointer to return maximum pixel value
+ * @return 	HAL_OK on success, HAL_ERROR otherwise
+ */
 HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal)
 {
-	// reset min, max and mean value
+	// reset min and max value
 	(*minVal) = UINT16_MAX;
 	(*maxVal) = 0;
 
@@ -145,45 +157,10 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData,
 	return HAL_OK;
 }
 
-void epc901_adjustShutterTime(uint16_t *shutterTime, uint16_t minVal, uint16_t maxVal)
-{
-	const uint16_t shutterList[] = {10, 20, 50, 100, 200, 500, 1000};
-	static uint16_t shutterIndex = 3;
-
-	const uint16_t MIN_BASELINE_PEAK = 40<<4;
-	const uint16_t MAX_BASELINE_PEAK = 50<<4;
-	const uint16_t MIN_BASELINE_NO_PEAK = 95<<4;
-	const uint16_t MAX_BASELINE_NO_PEAK = 105<<4;
-	const uint16_t MIN_PEAK = 80<<4;
-	const uint16_t MAX_PEAK = 120<<4;
-	const uint16_t MIN_PEAK_HEIGHT = 15<<4;
-	const uint16_t MIN_SHUTTER = 0;
-	const uint16_t MAX_SHUTTER = 6;
-
-	// no peak detected => bring baseline to ca. 100
-	if(maxVal < minVal + MIN_PEAK_HEIGHT) {
-		if(minVal < MIN_BASELINE_NO_PEAK && shutterIndex < MAX_SHUTTER){
-			shutterIndex++;
-		}
-		else if(minVal > MAX_BASELINE_NO_PEAK && shutterIndex > MIN_SHUTTER){
-			shutterIndex--;
-		}
-	}
-	// peak detected => search optimum peak to baseline ratio
-	else {
-		// baseline or peak to high => reduce shutter time
-		if((minVal > MAX_BASELINE_PEAK || maxVal > MAX_PEAK) && shutterIndex > MIN_SHUTTER){
-			shutterIndex--;
-		}
-		// peak to low and baseline ok => increase shutter time
-		else if (minVal < MIN_BASELINE_PEAK && maxVal < MIN_PEAK && shutterIndex < MAX_SHUTTER) {
-			shutterIndex++;
-		}
-	}
-	// calculate new shutter time
-	(*shutterTime) = shutterList[shutterIndex];
-}
-
+/**
+ * @brief 	Microsecond delay function
+ * @param 	delayTime_us: Delay time in microseconds
+ */
 void usDelay(uint16_t delayTime_us)
 {
 	__HAL_TIM_SET_COUNTER(&htim9,0);

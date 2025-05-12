@@ -20,11 +20,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
    ----------------------------------------------------------------------
  */
+#include <logic.h>
 #include "ssd1306.h"
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "signalProcessing.h"
 
 
 extern I2C_HandleTypeDef hi2c1;
@@ -51,12 +51,12 @@ typedef struct {
 /* Private variable */
 static SSD1306_t SSD1306;
 
-uint8_t SSD1306_Init(void) {
+HAL_StatusTypeDef SSD1306_Init(void) {
 	
 	/* Check if LCD connected to I2C */
 	if (HAL_I2C_IsDeviceReady(&hi2c1, SSD1306_I2C_ADDR, 1, 20000) != HAL_OK) {
 		/* Return false */
-		return 0;
+		return HAL_ERROR;
 	}
 	
 	/* A little delay */
@@ -110,7 +110,7 @@ uint8_t SSD1306_Init(void) {
 	SSD1306.Initialized = 1;
 	
 	/* Return OK */
-	return 1;
+	return HAL_OK;
 }
 
 void SSD1306_UpdateScreen(void) {
@@ -347,15 +347,6 @@ void SSD1306_DrawFilledRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
 		/* Draw lines */
 		SSD1306_DrawLine(x, y + i, x + w, y + i, c);
 	}
-}
-
-void SSD1306_InitScreen(void)
-{
-	SSD1306_GotoXY(115,40);
-	SSD1306_Puts("LTS Startup", &Font_11x18, 1);
-	SSD1306_GotoXY(115, 20);
-	SSD1306_Puts("Please Wait", &Font_11x18, 1);
-	SSD1306_UpdateScreen();
 }
 
 HAL_StatusTypeDef SSD1306_PrintData(char *firstLine, char *secondLine)

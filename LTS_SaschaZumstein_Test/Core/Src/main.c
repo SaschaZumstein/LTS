@@ -24,9 +24,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "ssd1306.h"
-#include "conn.h"
 #include "epc901.h"
-#include "signalProcessing.h"
+#include "logic.h"
 
 /* USER CODE END Includes */
 
@@ -98,14 +97,15 @@ static void MX_TIM3_Init(void);
  * @retval int
  */
 int main(void) {
+
 	/* USER CODE BEGIN 1 */
 	uint16_t distance = 300;
 	char distStr[9];
 	uint16_t shutterTime = 100;
-	uint16_t measureData[NUM_OF_PIX] = {0};
+	uint16_t measureData[NUM_OF_PIX] = { 0 };
 	uint16_t minVal = UINT16_MAX;
 	uint16_t maxVal = 0;
-	bool error = false;
+	bool error = true;
 	uint8_t buffer[1];
 	bool debugMode = true;
 	/* USER CODE END 1 */
@@ -135,69 +135,90 @@ int main(void) {
 	MX_TIM9_Init();
 	MX_TIM3_Init();
 	/* USER CODE BEGIN 2 */
-	/* Init all peripherals */
-	SSD1306_Init();
-	SSD1306_InitScreen();
-	HAL_TIM_Base_Start(&htim9);
-	epc901_init();
-	conn_writeData("\r\n\n-- LTS Init sucessfully --\r\n", 31);
-	HAL_Delay(2000);
-	SSD1306_Clear();
-
-	if(error){
-		LASER_OFF
-		LED_PWR_OFF
-		LED_ERROR_ON
-		// delay damit watchdog auslöst
+	while (error) {
+		error = false;
+		// init display
+		if (SSD1306_Init() != HAL_OK) {
+			error = true;
+		}
+		SSD1306_PrintData("LTS Startup", "Please Wait");
+		// init epc901
+		HAL_TIM_Base_Start(&htim9);
+		if (epc901_init() != HAL_OK) {
+			error = true;
+		}
+		HAL_Delay(2000);
+		// error in startup
+		if (error) {
+			LASER_OFF
+			LED_PWR_OFF
+			LED_ERROR_ON
+			LED_MEASURE_OFF
+			logic_writeData("\r\n\n-- LTS Startup error --\r\n", 28);
+			SSD1306_PrintData("LTS Startup", "Error      ");
+			HAL_Delay(2000);
+		}
 	}
-	else{
-		LASER_ON
-		LED_PWR_ON
-		LED_ERROR_OFF
-	}
+	// startup sucessfully
+	LASER_ON
+	LED_PWR_ON
+	LED_ERROR_OFF
 	LED_MEASURE_OFF
+	logic_writeData("\r\n\n-- LTS Startup successfully --\r\n", 35);
+	SSD1306_Clear();
+	// TODO start watchdog
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		// get the data from the epc901
-		epc901_getData(shutterTime, measureData, &minVal, &maxVal);
-		// regulate shutter time
-		epc901_adjustShutterTime(&shutterTime, minVal, maxVal);
-		// calculate distance
-		distance = sigProc_calcDist(measureData, minVal, maxVal);
-
-		if(distance == UINT16_MAX){ // error in measurement
-			SSD1306_PrintData("Distance:", "Error  ");
-			conn_writeData("Error in measurement\r\n", 22);
-			LED_MEASURE_OFF
+		if (epc901_getData(shutterTime, measureData, &minVal, &maxVal)
+				!= HAL_OK) {
+			error = true;
 		}
-		else{ // measurement sucessfull
+		// regulate shutter time
+		logic_adjustShutterTime(&shutterTime, minVal, maxVal);
+		// calculate distance
+		distance = logic_calcDist(measureData, minVal, maxVal);
+
+		if (distance == UINT16_MAX) { // error in measurement
+			if (SSD1306_PrintData("Distance:", "---- mm") != HAL_OK) {
+				error = true;
+			}
+			logic_writeData("Error in measurement\r\n", 22);
+			LED_MEASURE_OFF
+		} else { // measurement sucessfull
 			sprintf(distStr, "%4d mm", distance);
-			SSD1306_PrintData("Distance:", distStr);
-			conn_writeData(distStr, 7);
-			conn_writeData("\r\n", 2);
+			if (SSD1306_PrintData("Distance:", distStr) != HAL_OK) {
+				error = true;
+			}
+			logic_writeData(distStr, 7);
+			logic_writeData("\r\n", 2);
 			LED_MEASURE_ON
 		}
 
-		if(error){
+		if (error) {
 			LASER_OFF
 			LED_PWR_OFF
 			LED_ERROR_ON
-			// delay damit watchdog auslöst
+			SSD1306_PrintData("LTS Runtime", "Error  ");
+			logic_writeData("\r\n\n-- LTS Runtime error --\r\n", 28);
+			// TODO delay damit watchdog auslöst
 		}
 
 		// send shutter time and measured data via serial only in debug mode
-		if(debugMode){
-			printf("Shutter Time: %u\r\n", shutterTime);
-			conn_writeData("START DATA\r\n", 12);
+		if (debugMode) {
+			logic_writeData("Shutter Time:", 13);
+			logic_writeData(shutterTime, 4);
+			logic_writeData("\r\n", 2);
+			logic_writeData("START DATA\r\n", 12);
 			for (int i = 0; i < NUM_OF_PIX; i++) {
 				// transmit the data weg
 				buffer[0] = measureData[i] >> 4;
-				HAL_UART_Transmit(&huart2, buffer , 1, HAL_MAX_DELAY);
+				HAL_UART_Transmit(&huart2, buffer, 1, HAL_MAX_DELAY);
 			}
-			conn_writeData("\r\nEND DATA\r\n", 12);
+			logic_writeData("\r\nEND DATA\r\n", 12);
 		}
 		/* USER CODE END WHILE */
 
