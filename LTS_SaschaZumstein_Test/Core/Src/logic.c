@@ -17,7 +17,18 @@
 /*------------------------------------------------------------------------------------------*/
 /* Defines                                                                                  */
 /*------------------------------------------------------------------------------------------*/
-#define NUM_OF_PIX 1024
+#define NUM_OF_PIX 				1024
+#define MIN_BASELINE_PEAK 		(40<<4)
+#define MAX_BASELINE_PEAK 		(60<<4)
+#define MIN_BASELINE_NO_PEAK	(70<<4)
+#define MAX_BASELINE_NO_PEAK 	(100<<4)
+#define MIN_PEAK 				(78<<4)
+#define MAX_PEAK 				(118<<4)
+#define MIN_PEAK_HEIGHT 		(15<<4)
+#define MIN_SHUTTER 			0
+#define MAX_SHUTTER 			4
+#define MIN_DISTANCE			260
+#define MAX_DISTANCE 			1200
 
 /*------------------------------------------------------------------------------------------*/
 /* External Handles                                                                         */
@@ -36,21 +47,11 @@ extern UART_HandleTypeDef huart2;
  */
 void logic_adjustShutterTime(uint16_t *shutterTime, uint16_t minVal, uint16_t maxVal)
 {
-	const uint16_t shutterList[] = {10, 20, 50, 100, 200, 500, 1000};
-	static uint16_t shutterIndex = 3;
-
-	const uint16_t MIN_BASELINE_PEAK = 40<<4;
-	const uint16_t MAX_BASELINE_PEAK = 50<<4;
-	const uint16_t MIN_BASELINE_NO_PEAK = 95<<4;
-	const uint16_t MAX_BASELINE_NO_PEAK = 105<<4;
-	const uint16_t MIN_PEAK = 80<<4;
-	const uint16_t MAX_PEAK = 120<<4;
-	const uint16_t MIN_PEAK_HEIGHT = 15<<4;
-	const uint16_t MIN_SHUTTER = 0;
-	const uint16_t MAX_SHUTTER = 6;
+	const uint16_t shutterList[] = {50, 100, 200, 400, 800};
+	static uint16_t shutterIndex = 1;
 
 	// no peak detected => bring baseline to ca. 100
-	if(maxVal < minVal + MIN_PEAK_HEIGHT) {
+	if(maxVal < (minVal + MIN_PEAK_HEIGHT)) {
 		if(minVal < MIN_BASELINE_NO_PEAK && shutterIndex < MAX_SHUTTER){
 			shutterIndex++;
 		}
@@ -88,10 +89,6 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
 
 	const uint16_t minMaxMiddle = (minVal+maxVal)/2;
 
-	const uint16_t MIN_PEAK_HEIGHT = 15<<4;
-	const uint16_t MIN_DISTANCE = 260;
-	const uint16_t MAX_DISTANCE = 1200;
-
 	// fit parameter
 	const double A = -3.11767119e-25;
 	const double B = 1.49183346e-21;
@@ -106,7 +103,7 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
 	const double K = 2.54416652e+02;
 
 	// no laser peak detected => error
-	if(maxVal < minVal + MIN_PEAK_HEIGHT){
+	if(maxVal < (minVal + MIN_PEAK_HEIGHT)){
 		return UINT16_MAX;
 	}
 

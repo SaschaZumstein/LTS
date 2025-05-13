@@ -173,8 +173,7 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		// get the data from the epc901
-		if (epc901_getData(shutterTime, measureData, &minVal, &maxVal)
-				!= HAL_OK) {
+		if (epc901_getData(shutterTime, measureData, &minVal, &maxVal) != HAL_OK) {
 			error = true;
 		}
 		// regulate shutter time
@@ -204,14 +203,12 @@ int main(void) {
 			LED_ERROR_ON
 			SSD1306_PrintData("LTS Runtime", "Error  ");
 			logic_writeData("\r\n\n-- LTS Runtime error --\r\n", 28);
-			// TODO delay damit watchdog auslöst
+			HAL_Delay(2000);
 		}
 
-		// send shutter time and measured data via serial only in debug mode
+		// send measured data via serial only in debug mode
 		if (debugMode) {
-			logic_writeData("Shutter Time:", 13);
-			logic_writeData(shutterTime, 4);
-			logic_writeData("\r\n", 2);
+			printf("Shutter Time: %u\r\n", shutterTime);
 			logic_writeData("START DATA\r\n", 12);
 			for (int i = 0; i < NUM_OF_PIX; i++) {
 				// transmit the data weg
