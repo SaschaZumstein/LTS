@@ -48,7 +48,7 @@ extern UART_HandleTypeDef huart2;
 void logic_adjustShutterTime(uint16_t *shutterTime, uint16_t minVal, uint16_t maxVal)
 {
 	const uint16_t shutterList[] = {50, 100, 200, 400, 800};
-	static uint16_t shutterIndex = 1;
+	static uint8_t shutterIndex = 1;
 
 	// no peak detected => bring baseline to ca. 100
 	if(maxVal < (minVal + MIN_PEAK_HEIGHT)) {

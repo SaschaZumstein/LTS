@@ -102,6 +102,7 @@ int main(void) {
 	uint16_t distance = 300;
 	char distStr[9];
 	uint16_t shutterTime = 100;
+	char shutterStr[20];
 	uint16_t measureData[NUM_OF_PIX] = { 0 };
 	uint16_t minVal = UINT16_MAX;
 	uint16_t maxVal = 0;
@@ -208,7 +209,10 @@ int main(void) {
 
 		// send measured data via serial only in debug mode
 		if (debugMode) {
-			printf("Shutter Time: %u\r\n", shutterTime);
+			sprintf(shutterStr, "Shutter Time: %3d", shutterTime);
+			logic_writeData(shutterStr, 17);
+			logic_writeData("\r\n", 2);
+
 			logic_writeData("START DATA\r\n", 12);
 			for (int i = 0; i < NUM_OF_PIX; i++) {
 				// transmit the data weg
