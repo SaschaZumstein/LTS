@@ -193,6 +193,7 @@ int main(void) {
 			if (SSD1306_PrintData("Distance:", distStr) != HAL_OK) {
 				error = true;
 			}
+			logic_writeData("Distance: ", 10);
 			logic_writeData(distStr, 7);
 			logic_writeData("\r\n", 2);
 			LED_MEASURE_ON
