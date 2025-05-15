@@ -64,7 +64,8 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+uint8_t rxBuffer[1];
+volatile bool debugMode = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,19 +83,12 @@ static void MX_TIM3_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-// Prototype implementation
-#ifdef __GNUC__
-/* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
- set to 'Yes') calls __io_putchar() */
-#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
-#else
-#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
-#endif /* __GNUC__ */
+
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
+ * @brief	The application entry point.
+ * @return	int
  */
 int main(void) {
 
@@ -102,13 +96,12 @@ int main(void) {
 	uint16_t distance = 300;
 	char distStr[9];
 	uint16_t shutterTime = 100;
-	char shutterStr[20];
+	char shutterStr[22];
 	uint16_t measureData[NUM_OF_PIX] = { 0 };
 	uint16_t minVal = UINT16_MAX;
 	uint16_t maxVal = 0;
 	bool error = true;
-	uint8_t buffer[1];
-	bool debugMode = true;
+	uint8_t txBuffer[1];
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -167,6 +160,7 @@ int main(void) {
 	LED_MEASURE_OFF
 	logic_writeData("\r\n\n-- LTS Startup successfully --\r\n", 35);
 	SSD1306_Clear();
+	HAL_UART_Receive_IT(&huart2, rxBuffer, 1);
 	// TODO start watchdog
 	/* USER CODE END 2 */
 
@@ -188,7 +182,8 @@ int main(void) {
 			}
 			logic_writeData("Error in measurement\r\n", 22);
 			LED_MEASURE_OFF
-		} else { // measurement sucessfull
+		}
+		else { // measurement sucessfull
 			sprintf(distStr, "%4d mm", distance);
 			if (SSD1306_PrintData("Distance:", distStr) != HAL_OK) {
 				error = true;
@@ -208,17 +203,16 @@ int main(void) {
 			HAL_Delay(2000);
 		}
 
-		// send measured data via serial only in debug mode
+		// send shutter time and measured data via serial only if debug mode is activated
 		if (debugMode) {
-			sprintf(shutterStr, "Shutter Time: %3d", shutterTime);
-			logic_writeData(shutterStr, 17);
-			logic_writeData("\r\n", 2);
+			sprintf(shutterStr, "Shutter Time: %3d\r\n", shutterTime);
+			logic_writeData(shutterStr, 19);
 
 			logic_writeData("START DATA\r\n", 12);
 			for (int i = 0; i < NUM_OF_PIX; i++) {
 				// transmit the data weg
-				buffer[0] = measureData[i] >> 4;
-				HAL_UART_Transmit(&huart2, buffer, 1, HAL_MAX_DELAY);
+				txBuffer[0] = measureData[i] >> 4;
+				HAL_UART_Transmit(&huart2, txBuffer, 1, HAL_MAX_DELAY);
 			}
 			logic_writeData("\r\nEND DATA\r\n", 12);
 		}
@@ -226,6 +220,7 @@ int main(void) {
 
 		/* USER CODE BEGIN 3 */
 	}
+	return 0;
 	/* USER CODE END 3 */
 }
 
@@ -554,17 +549,18 @@ static void MX_GPIO_Init(void) {
 
 /* USER CODE BEGIN 4 */
 /**
- * @brief Retargets the C library printf function to the USART.
- * @param None
+ * @brief Callback function of UART interrupt
+ * @param UART handle type
  * @retval None
  */
-PUTCHAR_PROTOTYPE {
-	/* Place your implementation of fputc here */
-	/* e.g. write a character to the USART2 and Loop until the end of transmission */
-	HAL_UART_Transmit(&huart2, (uint8_t*) &ch, 1, 0xFFFF);
-	return ch;
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	if (rxBuffer[0] == 't') {
+		debugMode = true;
+	} else if (rxBuffer[0] == 'f') {
+		debugMode = false;
+	}
+	HAL_UART_Receive_IT(&huart2, rxBuffer, 1);
 }
-
 /* USER CODE END 4 */
 
 /**

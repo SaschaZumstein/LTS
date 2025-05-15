@@ -17,6 +17,7 @@ import keyboard
 # Create object serial port
 portName = "COM7"
 baudrate = 115200
+debug = True
 ser = serial.Serial(portName,baudrate)
 
 filename = "LTS_CurveData.csv"
@@ -77,10 +78,9 @@ def update():
     if keyboard.is_pressed('s') and not save_next_frame:
         print("Taste S gedrückt – nächste Messung wird gespeichert.")
         save_next_frame = True
-    
     #Search for the Fram Start ("START")
     current_char = ser.readline()
-    if len(current_char) > 6 and (current_char[5:7] == b'mm' or current_char[:7] == b'Shutter'): 
+    if current_char[:8] == b'Distance' or current_char[:7] == b'Shutter': 
         print(current_char)
     if save_next_frame and current_char[5:7] == b'mm':
         write_csv(current_char)
@@ -102,6 +102,11 @@ def update():
     QtWidgets.QApplication.processEvents()    # you MUST process the plot now
 
 ### MAIN PROGRAM #####
+if(debug):
+    ser.write(b't') 
+else:
+    ser.write(b'f') 
+
 # this is a brutal infinite loop calling your realtime data plot
 try:
 	while True: update()
