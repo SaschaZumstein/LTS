@@ -19,14 +19,14 @@
 /*------------------------------------------------------------------------------------------*/
 #define NUM_OF_PIX 				1024
 #define MIN_BASELINE_PEAK 		(40<<4)
-#define MAX_BASELINE_PEAK 		(60<<4)
+#define MAX_BASELINE_PEAK 		(70<<4)
 #define MIN_BASELINE_NO_PEAK	(70<<4)
 #define MAX_BASELINE_NO_PEAK 	(100<<4)
-#define MIN_PEAK 				(78<<4)
-#define MAX_PEAK 				(118<<4)
+#define MIN_PEAK 				(80<<4)
+#define MAX_PEAK 				(115<<4)
 #define MIN_PEAK_HEIGHT 		(15<<4)
 #define MIN_SHUTTER 			0
-#define MAX_SHUTTER 			4
+#define MAX_SHUTTER 			10
 #define MIN_DISTANCE			260
 #define MAX_DISTANCE 			1200
 
@@ -47,10 +47,11 @@ extern UART_HandleTypeDef huart2;
  */
 void logic_adjustShutterTime(uint16_t *shutterTime, uint16_t minVal, uint16_t maxVal)
 {
-	const uint16_t shutterList[] = {50, 100, 200, 400, 800};
-	static uint8_t shutterIndex = 1;
+	// TODO test shutter time regulation
+	const uint16_t shutterList[] = {50, 70, 90, 125, 165, 225, 300, 410, 550, 750, 1000};
+	static uint8_t shutterIndex = 3;
 
-	// no peak detected => bring baseline to ca. 100
+	// no peak detected => bring baseline to a good value
 	if(maxVal < (minVal + MIN_PEAK_HEIGHT)) {
 		if(minVal < MIN_BASELINE_NO_PEAK && shutterIndex < MAX_SHUTTER){
 			shutterIndex++;
@@ -89,7 +90,7 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
 
 	const uint16_t minMaxMiddle = (minVal+maxVal)/2;
 
-	// fit parameter
+	// TODO fit parameter new calibration
 	const double A = -3.11767119e-25;
 	const double B = 1.49183346e-21;
 	const double C = -3.02357839e-18;

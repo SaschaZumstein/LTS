@@ -45,6 +45,12 @@
 #define LED_MEASURE_OFF	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
 #define LED_ERROR_ON	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
 #define LED_ERROR_OFF	HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+#define CHECK_STATUS(status)       \
+	do {                    	\
+	if ((status) != HAL_OK) {	\
+		Error_Handler();     	\
+	}                        	\
+} while (0)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -95,12 +101,11 @@ int main(void) {
 	/* USER CODE BEGIN 1 */
 	uint16_t distance = 300;
 	char distStr[9];
-	uint16_t shutterTime = 100;
+	uint16_t shutterTime = 125;
 	char shutterStr[22];
 	uint16_t measureData[NUM_OF_PIX] = { 0 };
 	uint16_t minVal = UINT16_MAX;
 	uint16_t maxVal = 0;
-	bool error = true;
 	uint8_t txBuffer[1];
 	/* USER CODE END 1 */
 
@@ -129,30 +134,17 @@ int main(void) {
 	MX_TIM9_Init();
 	MX_TIM3_Init();
 	/* USER CODE BEGIN 2 */
-	while (error) {
-		error = false;
-		// init display
-		if (SSD1306_Init() != HAL_OK) {
-			error = true;
-		}
-		SSD1306_PrintData("LTS Startup", "Please Wait");
-		// init epc901
-		HAL_TIM_Base_Start(&htim9);
-		if (epc901_init() != HAL_OK) {
-			error = true;
-		}
-		HAL_Delay(2000);
-		// error in startup
-		if (error) {
-			LASER_OFF
-			LED_PWR_OFF
-			LED_ERROR_ON
-			LED_MEASURE_OFF
-			logic_writeData("\r\n\n-- LTS Startup error --\r\n", 28);
-			SSD1306_PrintData("LTS Startup", "Error      ");
-			HAL_Delay(2000);
-		}
-	}
+	// init display
+	CHECK_STATUS(SSD1306_Init());
+	CHECK_STATUS(SSD1306_PrintData("LTS Startup", "Please Wait"));
+	// init epc901
+	CHECK_STATUS(HAL_TIM_Base_Start(&htim9));
+	CHECK_STATUS(epc901_init());
+	// init UART
+	CHECK_STATUS(HAL_UART_Receive_IT(&huart2, rxBuffer, 1));
+	logic_writeData("\r\n\n-- LTS Startup Please Wait --\r\n", 34);
+	// delay to display startup screen
+	HAL_Delay(2000);
 	// startup sucessfully
 	LASER_ON
 	LED_PWR_ON
@@ -160,7 +152,6 @@ int main(void) {
 	LED_MEASURE_OFF
 	logic_writeData("\r\n\n-- LTS Startup successfully --\r\n", 35);
 	SSD1306_Clear();
-	HAL_UART_Receive_IT(&huart2, rxBuffer, 1);
 	// TODO start watchdog
 	/* USER CODE END 2 */
 
@@ -168,39 +159,23 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		// get the data from the epc901
-		if (epc901_getData(shutterTime, measureData, &minVal, &maxVal) != HAL_OK) {
-			error = true;
-		}
+		CHECK_STATUS(epc901_getData(shutterTime, measureData, &minVal, &maxVal));
 		// regulate shutter time
 		logic_adjustShutterTime(&shutterTime, minVal, maxVal);
 		// calculate distance
 		distance = logic_calcDist(measureData, minVal, maxVal);
 
-		if (distance == UINT16_MAX) { // error in measurement
-			if (SSD1306_PrintData("Distance:", "---- mm") != HAL_OK) {
-				error = true;
-			}
-			logic_writeData("Error in measurement\r\n", 22);
+		if (distance == UINT16_MAX) { // measurement not successful
+			CHECK_STATUS(SSD1306_PrintData("Distance:", "---- mm"));
+			logic_writeData("Distance: ---- mm\r\n", 19);
 			LED_MEASURE_OFF
-		}
-		else { // measurement sucessfull
+		} else { // measurement successful
 			sprintf(distStr, "%4d mm", distance);
-			if (SSD1306_PrintData("Distance:", distStr) != HAL_OK) {
-				error = true;
-			}
+			CHECK_STATUS(SSD1306_PrintData("Distance:", distStr));
 			logic_writeData("Distance: ", 10);
 			logic_writeData(distStr, 7);
 			logic_writeData("\r\n", 2);
 			LED_MEASURE_ON
-		}
-
-		if (error) {
-			LASER_OFF
-			LED_PWR_OFF
-			LED_ERROR_ON
-			SSD1306_PrintData("LTS Runtime", "Error  ");
-			logic_writeData("\r\n\n-- LTS Runtime error --\r\n", 28);
-			HAL_Delay(2000);
 		}
 
 		// send shutter time and measured data via serial only if debug mode is activated
@@ -208,9 +183,9 @@ int main(void) {
 			sprintf(shutterStr, "Shutter Time: %3d\r\n", shutterTime);
 			logic_writeData(shutterStr, 19);
 
+			// transmit the data
 			logic_writeData("START DATA\r\n", 12);
 			for (int i = 0; i < NUM_OF_PIX; i++) {
-				// transmit the data weg
 				txBuffer[0] = measureData[i] >> 4;
 				HAL_UART_Transmit(&huart2, txBuffer, 1, HAL_MAX_DELAY);
 			}
@@ -569,10 +544,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
  */
 void Error_Handler(void) {
 	/* USER CODE BEGIN Error_Handler_Debug */
-	/* User can add his own implementation to report the HAL error return state */
-	__disable_irq();
-	while (1) {
-	}
+	// TODO test this block
+	LASER_OFF
+	LED_PWR_OFF
+	LED_MEASURE_OFF
+	LED_ERROR_ON
+	SSD1306_PrintData("LTS Runtime", "Error   ");
+	logic_writeData("\r\n\n-- LTS Runtime error --\r\n", 28);
+	HAL_Delay(2000);
+	NVIC_SystemReset(); // system restart
 	/* USER CODE END Error_Handler_Debug */
 }
 
