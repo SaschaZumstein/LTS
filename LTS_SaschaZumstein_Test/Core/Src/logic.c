@@ -47,7 +47,6 @@ extern UART_HandleTypeDef huart2;
  */
 void logic_adjustShutterTime(uint16_t *shutterTime, uint16_t minVal, uint16_t maxVal)
 {
-	// TODO test shutter time regulation
 	const uint16_t shutterList[] = {50, 70, 90, 125, 165, 225, 300, 410, 550, 750, 1000};
 	static uint8_t shutterIndex = 3;
 
@@ -90,7 +89,6 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
 
 	const uint16_t minMaxMiddle = (minVal+maxVal)/2;
 
-	// TODO fit parameter new calibration
 	const double A = -3.11767119e-25;
 	const double B = 1.49183346e-21;
 	const double C = -3.02357839e-18;
@@ -118,7 +116,7 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
 	cog = (double)weightedSum/sum;
 
 	// calculate the distance with a calibrated polynomial
-	distance = (uint16_t)((((((((((A*cog+B)*cog+C)*cog+D)*cog+E)*cog+F)*cog+G)*cog+H)*cog+I)*cog+J)*cog+K);
+	distance = (uint16_t)(((((((((((A*cog+B)*cog+C)*cog+D)*cog+E)*cog+F)*cog+G)*cog+H)*cog+I)*cog+J)*cog+K)+0.5);
 	// distance to high or to low
 	if(distance < MIN_DISTANCE || distance > MAX_DISTANCE){
 		return UINT16_MAX;

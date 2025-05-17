@@ -63,6 +63,8 @@ ADC_HandleTypeDef hadc1;
 
 I2C_HandleTypeDef hi2c1;
 
+IWDG_HandleTypeDef hiwdg;
+
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim9;
 
@@ -83,6 +85,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM9_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_IWDG_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -93,8 +96,8 @@ static void MX_TIM3_Init(void);
 /* USER CODE END 0 */
 
 /**
- * @brief	The application entry point.
- * @return	int
+ * @brief  The application entry point.
+ * @retval int
  */
 int main(void) {
 
@@ -133,10 +136,11 @@ int main(void) {
 	MX_USART2_UART_Init();
 	MX_TIM9_Init();
 	MX_TIM3_Init();
+	MX_IWDG_Init();
 	/* USER CODE BEGIN 2 */
 	// init display
 	CHECK_STATUS(SSD1306_Init());
-	CHECK_STATUS(SSD1306_PrintData("LTS Startup", "Please Wait"));
+	SSD1306_PrintData("LTS Startup", "Please Wait");
 	// init epc901
 	CHECK_STATUS(HAL_TIM_Base_Start(&htim9));
 	CHECK_STATUS(epc901_init());
@@ -144,7 +148,10 @@ int main(void) {
 	CHECK_STATUS(HAL_UART_Receive_IT(&huart2, rxBuffer, 1));
 	logic_writeData("\r\n\n-- LTS Startup Please Wait --\r\n", 34);
 	// delay to display startup screen
-	HAL_Delay(2000);
+	for(int i=0; i<10; i++){
+		HAL_IWDG_Refresh(&hiwdg);
+		HAL_Delay(200);
+	}
 	// startup sucessfully
 	LASER_ON
 	LED_PWR_ON
@@ -152,7 +159,6 @@ int main(void) {
 	LED_MEASURE_OFF
 	logic_writeData("\r\n\n-- LTS Startup successfully --\r\n", 35);
 	SSD1306_Clear();
-	// TODO start watchdog
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -194,6 +200,7 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
+		HAL_IWDG_Refresh(&hiwdg); // refresh watchdog
 	}
 	return 0;
 	/* USER CODE END 3 */
@@ -215,9 +222,11 @@ void SystemClock_Config(void) {
 	/** Initializes the RCC Oscillators according to the specified parameters
 	 * in the RCC_OscInitTypeDef structure.
 	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI
+			| RCC_OSCILLATORTYPE_LSI;
 	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
 	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+	RCC_OscInitStruct.LSIState = RCC_LSI_ON;
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
 	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
 		Error_Handler();
@@ -315,6 +324,32 @@ static void MX_I2C1_Init(void) {
 	/* USER CODE BEGIN I2C1_Init 2 */
 
 	/* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+ * @brief IWDG Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_IWDG_Init(void) {
+
+	/* USER CODE BEGIN IWDG_Init 0 */
+
+	/* USER CODE END IWDG_Init 0 */
+
+	/* USER CODE BEGIN IWDG_Init 1 */
+
+	/* USER CODE END IWDG_Init 1 */
+	hiwdg.Instance = IWDG;
+	hiwdg.Init.Prescaler = IWDG_PRESCALER_8;
+	hiwdg.Init.Reload = 4095;
+	if (HAL_IWDG_Init(&hiwdg) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN IWDG_Init 2 */
+
+	/* USER CODE END IWDG_Init 2 */
 
 }
 
@@ -529,12 +564,14 @@ static void MX_GPIO_Init(void) {
  * @retval None
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-	if (rxBuffer[0] == 't') {
-		debugMode = true;
-	} else if (rxBuffer[0] == 'f') {
-		debugMode = false;
+	if (huart->Instance == USART2) {
+		if (rxBuffer[0] == 't') {
+			debugMode = true;
+		} else if (rxBuffer[0] == 'f') {
+			debugMode = false;
+		}
+		HAL_UART_Receive_IT(&huart2, rxBuffer, 1);
 	}
-	HAL_UART_Receive_IT(&huart2, rxBuffer, 1);
 }
 /* USER CODE END 4 */
 
@@ -544,15 +581,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
  */
 void Error_Handler(void) {
 	/* USER CODE BEGIN Error_Handler_Debug */
-	// TODO test this block
 	LASER_OFF
 	LED_PWR_OFF
 	LED_MEASURE_OFF
 	LED_ERROR_ON
 	SSD1306_PrintData("LTS Runtime", "Error   ");
 	logic_writeData("\r\n\n-- LTS Runtime error --\r\n", 28);
-	HAL_Delay(2000);
-	NVIC_SystemReset(); // system restart
+	while (1){
+		HAL_IWDG_Refresh(&hiwdg);
+		HAL_Delay(200);
+	}
 	/* USER CODE END Error_Handler_Debug */
 }
 
