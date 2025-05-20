@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr 29 10:29:25 2020
-Last modified on Wed Mai 21 16:43:58 2025
 
 @author: Gion-Pol Catregn (FHGR)
-@author: Sascha Zumstein (FHGR)
-
-@version 1.0
 """
 
 # Import libraries
@@ -21,10 +17,14 @@ import keyboard
 # Create object serial port
 portName = "COM7"
 baudrate = 115200
+debug = True
 ser = serial.Serial(portName,baudrate)
 
-# Turn debug mode on and off
-debug = True
+filename = "LTS_CurveData.csv"
+
+save_next_frame = False
+
+i = 1
 
 ### START QtApp #####
 app = QtWidgets.QApplication([]) # you MUST do this once (initialize things)
@@ -53,15 +53,39 @@ win.setWindowTitle('pyqtgraph example: Plotting LTS Data')
 #Activate and show the window
 win.show()
 win.activateWindow()
+
+def write_csv(current_char):
+    global i
+
+    with open(filename, mode='r', newline='') as file:
+        reader = csv.reader(file)
+        rows = list(reader)
+
+    rows[i][0] = current_char[0:5].decode('utf-8')
+    i += 1
+
+    # Die geänderten Daten wieder in die CSV-Datei schreiben
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(rows)
      
+
 # Realtime data plot. Each time this function is called, the data display is updated
 def update():
-    global curve #global variable for the vcurve
+    global curve#global variable for the vcurve
+    global save_next_frame
 
+    if keyboard.is_pressed('s') and not save_next_frame:
+        print("Taste S gedrückt – nächste Messung wird gespeichert.")
+        save_next_frame = True
     #Search for the Fram Start ("START")
     current_char = ser.readline()
     if current_char[:8] == b'Distance' or current_char[:7] == b'Shutter': 
         print(current_char)
+    if save_next_frame and current_char[:8] == b'Distance':
+        write_csv(current_char[10:])
+        print("Messung gespeichert.")
+        save_next_frame = False
 
     # check for the start string
     if current_char[:5] == b'START':
@@ -78,7 +102,6 @@ def update():
     QtWidgets.QApplication.processEvents()    # you MUST process the plot now
 
 ### MAIN PROGRAM #####
-# turn debug mode on or off
 if(debug):
     ser.write(b't') 
 else:

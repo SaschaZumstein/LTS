@@ -187,7 +187,7 @@ int main(void) {
 
 		// send shutter time and measured data via serial only if debug mode is activated
 		if (debugMode) {
-			sprintf(shutterStr, "Shutter Time: %3d\r\n", shutterTime);
+			sprintf(shutterStr, "Shutter Time: %4d\r\n", shutterTime);
 			logic_writeData(shutterStr, 20);
 
 			// transmit the data
@@ -588,10 +588,8 @@ void Error_Handler(void) {
 	LED_ERROR_ON
 	SSD1306_PrintData("LTS Runtime", "Error      ");
 	logic_writeData("\r\n\n-- LTS Runtime error --\r\n", 28);
-	while (1){
-		HAL_IWDG_Refresh(&hiwdg);
-		HAL_Delay(200);
-	}
+	HAL_IWDG_Refresh(&hiwdg);
+	while(1);
 	/* USER CODE END Error_Handler_Debug */
 }
 

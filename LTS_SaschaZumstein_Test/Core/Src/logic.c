@@ -26,7 +26,7 @@
 #define MAX_PEAK 				(115<<4)
 #define MIN_PEAK_HEIGHT 		(15<<4)
 #define MIN_SHUTTER 			0
-#define MAX_SHUTTER 			10
+#define MAX_SHUTTER 			12
 #define MIN_DISTANCE			260
 #define MAX_DISTANCE 			1200
 
@@ -47,7 +47,7 @@ extern UART_HandleTypeDef huart2;
  */
 void logic_adjustShutterTime(uint16_t *shutterTime, uint16_t minVal, uint16_t maxVal)
 {
-	const uint16_t shutterList[] = {50, 70, 90, 125, 165, 225, 300, 410, 550, 750, 1000};
+	const uint16_t shutterList[] = {50, 70, 90, 125, 165, 225, 300, 410, 550, 750, 1000, 1500, 2250};
 	static uint8_t shutterIndex = 3;
 
 	// no peak detected => bring baseline to a good value
