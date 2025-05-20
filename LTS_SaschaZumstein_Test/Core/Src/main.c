@@ -175,7 +175,8 @@ int main(void) {
 			CHECK_STATUS(SSD1306_PrintData("Distance:", "---- mm"));
 			logic_writeData("Distance: ---- mm\r\n", 19);
 			LED_MEASURE_OFF
-		} else { // measurement successful
+		}
+		else { // measurement successful
 			sprintf(distStr, "%4d mm", distance);
 			CHECK_STATUS(SSD1306_PrintData("Distance:", distStr));
 			logic_writeData("Distance: ", 10);
@@ -187,7 +188,7 @@ int main(void) {
 		// send shutter time and measured data via serial only if debug mode is activated
 		if (debugMode) {
 			sprintf(shutterStr, "Shutter Time: %3d\r\n", shutterTime);
-			logic_writeData(shutterStr, 19);
+			logic_writeData(shutterStr, 20);
 
 			// transmit the data
 			logic_writeData("START DATA\r\n", 12);
@@ -585,7 +586,7 @@ void Error_Handler(void) {
 	LED_PWR_OFF
 	LED_MEASURE_OFF
 	LED_ERROR_ON
-	SSD1306_PrintData("LTS Runtime", "Error   ");
+	SSD1306_PrintData("LTS Runtime", "Error      ");
 	logic_writeData("\r\n\n-- LTS Runtime error --\r\n", 28);
 	while (1){
 		HAL_IWDG_Refresh(&hiwdg);

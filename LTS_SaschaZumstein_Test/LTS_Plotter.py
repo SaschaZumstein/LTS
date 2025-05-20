@@ -80,6 +80,7 @@ def update():
         save_next_frame = True
     #Search for the Fram Start ("START")
     current_char = ser.readline()
+    print(current_char)
     if current_char[:8] == b'Distance' or current_char[:7] == b'Shutter': 
         print(current_char)
     if save_next_frame and current_char[5:7] == b'mm':
