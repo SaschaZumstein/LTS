@@ -27,6 +27,10 @@ ser = serial.Serial(portName,baudrate)
 # Turn debug mode on and off
 debug = True
 
+count = 0
+start_time = None
+end_time = None
+
 ### START QtApp #####
 app = QtWidgets.QApplication([]) # you MUST do this once (initialize things)
 ####################
@@ -58,11 +62,26 @@ win.activateWindow()
 # Realtime data plot. Each time this function is called, the data display is updated
 def update():
     global curve #global variable for the vcurve
+    global count
+    global start_time
+    global end_time
 
     #Search for the Fram Start ("START")
     current_char = ser.readline()
-    if current_char[:8] == b'Distance' or current_char[:7] == b'Shutter': 
-        print(current_char)
+    if current_char[:8] == b'Distance':
+        if count == 0:
+            start_time = time.time()
+        count += 1
+        if count == 100:
+            end_time = time.time()
+            duration = (end_time - start_time) / 100  # Sekunden pro Befehl
+            freq = 1 / duration                       # Befehle pro Sekunde (Hz)
+            print(f"Dauer pro Befehl: {duration:.6f} s")
+            print(f"Frequenz: {freq:.2f} Hz")  
+            count = 0
+
+    #if current_char[:8] == b'Distance' or current_char[:7] == b'Shutter': 
+        #print(current_char)
 
     # check for the start string
     if current_char[:5] == b'START':
