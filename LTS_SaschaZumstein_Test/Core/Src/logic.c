@@ -94,12 +94,12 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
 	}
 
 	// calculate the center of gravity of the beam
-	const uint16_t minMaxMiddle = (minVal+maxVal)/2;
+	const uint16_t threshold = (3*minVal + 7*maxVal)/10;
 	const uint16_t startIndex = maxIndex > INDEX_THRESHOLD ? maxIndex - INDEX_THRESHOLD : 0;
 	const uint16_t endIndex = maxIndex < (NUM_OF_PIX-INDEX_THRESHOLD) ? maxIndex + INDEX_THRESHOLD : NUM_OF_PIX;
 
 	for (uint16_t i = startIndex; i < endIndex; i++) {
-		if(aquisitionData[i] >= minMaxMiddle){
+		if(aquisitionData[i] >= threshold){
 			weightedSum += i*aquisitionData[i];
 			sum += aquisitionData[i];
 		}
