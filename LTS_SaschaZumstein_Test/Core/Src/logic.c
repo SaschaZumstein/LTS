@@ -13,6 +13,7 @@
 #include "main.h"
 #include "logic.h"
 #include <stdio.h>
+#include <stdbool.h>
 
 /*------------------------------------------------------------------------------------------*/
 /* Defines                                                                                  */
@@ -27,8 +28,8 @@
 #define MIN_PEAK_HEIGHT 		(15<<4)
 #define MIN_SHUTTER 			0
 #define MAX_SHUTTER 			12
-#define MIN_DISTANCE			260
-#define MAX_DISTANCE 			1200
+#define MIN_COG					18.0
+#define MAX_COG		 			1000.0
 #define INDEX_THRESHOLD			50
 
 /*------------------------------------------------------------------------------------------*/
@@ -86,11 +87,29 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
 	uint32_t weightedSum = 0;
 	uint32_t sum = 0;
 	double cog = 0.0;
-	uint16_t distance = 0;
 
+	// no laser peak detected => error
+	if(maxVal < (minVal + MIN_PEAK_HEIGHT)){
+		return UINT16_MAX;
+	}
+
+	// calculate the center of gravity of the beam
 	const uint16_t minMaxMiddle = (minVal+maxVal)/2;
 	const uint16_t startIndex = maxIndex > INDEX_THRESHOLD ? maxIndex - INDEX_THRESHOLD : 0;
 	const uint16_t endIndex = maxIndex < (NUM_OF_PIX-INDEX_THRESHOLD) ? maxIndex + INDEX_THRESHOLD : NUM_OF_PIX;
+
+	for (uint16_t i = startIndex; i < endIndex; i++) {
+		if(aquisitionData[i] >= minMaxMiddle){
+			weightedSum += i*aquisitionData[i];
+			sum += aquisitionData[i];
+		}
+	}
+	cog = (double)weightedSum/sum;
+
+	// center of gravity out of range => error
+	if(cog < MIN_COG || cog > MAX_COG){
+		return UINT16_MAX;
+	}
 
 	// calibrated values
 	const double A = -3.11767119e-25;
@@ -105,27 +124,8 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
 	const double J = 3.50999221e-01;
 	const double K = 2.54416652e+02;
 
-	// no laser peak detected => error
-	if(maxVal < (minVal + MIN_PEAK_HEIGHT)){
-		return UINT16_MAX;
-	}
-
-	// calculate the center of gravity of the beam
-	for (uint16_t i = startIndex; i < endIndex; i++) {
-		if(aquisitionData[i] >= minMaxMiddle){
-			weightedSum += i*aquisitionData[i];
-			sum += aquisitionData[i];
-		}
-	}
-	cog = (double)weightedSum/sum;
-
 	// calculate the distance with a calibrated polynomial
-	distance = (uint16_t)(((((((((((A*cog+B)*cog+C)*cog+D)*cog+E)*cog+F)*cog+G)*cog+H)*cog+I)*cog+J)*cog+K)+0.5);
-	// distance to high or to low
-	if(distance < MIN_DISTANCE || distance > MAX_DISTANCE){
-		return UINT16_MAX;
-	}
-	return distance;
+	return (uint16_t)(((((((((((A*cog+B)*cog+C)*cog+D)*cog+E)*cog+F)*cog+G)*cog+H)*cog+I)*cog+J)*cog+K)+0.5);
 }
 
 /**
@@ -133,8 +133,10 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
  * @param   data: Pointer to the data buffer or string
  * @param   length Number of bytes to send
  */
-void logic_writeData(const char *data, int length)
+void logic_writeData(const char *data, int length, bool fastMode)
 {
-	HAL_UART_Transmit(&huart1, (uint8_t *)data, length, HAL_MAX_DELAY);
+	if (!fastMode){ // don't send data via bluetooth in fast mode
+		HAL_UART_Transmit(&huart1, (uint8_t *)data, length, HAL_MAX_DELAY);
+	}
 	HAL_UART_Transmit(&huart2, (uint8_t *)data, length, HAL_MAX_DELAY);
 }

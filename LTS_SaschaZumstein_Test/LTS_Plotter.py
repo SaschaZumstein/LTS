@@ -23,8 +23,15 @@ baudrate = 115200
 ser = serial.Serial(portName,baudrate)
 
 # Select mode
-debug = True
-fast = False
+debug = False
+fast = True
+performaceAnalysis = True
+
+lastDist = 0
+lastShutter = 0
+count = 0
+start_time = None
+end_time = None
 
 if debug:
     ### START QtApp #####
@@ -58,11 +65,32 @@ if debug:
 # Realtime data plot. Each time this function is called, the data display is updated
 def update():
     global curve #global variable for the vcurve
+    global lastDist
+    global lastShutter
+    global count
+    global start_time
+    global end_time
 
     #Search for special frames
     current_char = ser.readline()
-    if current_char[:8] == b'Distance' or current_char[:7] == b'Shutter': 
-        print(current_char)
+    if current_char[:8] == b'Distance':
+        if lastDist != current_char:
+            print(current_char)
+            lastDist = current_char
+        if performaceAnalysis:
+            if count == 0:
+                start_time = time.time()
+            count += 1
+            if count == 100:
+                end_time = time.time()
+                duration = (end_time - start_time) / 100
+                freq = 1 / duration
+                print(f"Frequenz: {freq:.2f} Hz")  
+                count = 0
+    if current_char[:7] == b'Shutter': 
+        if lastShutter != current_char:
+            print(current_char)
+            lastShutter = current_char
 
     if debug:
         # check for the start string
@@ -84,11 +112,14 @@ def update():
 if debug and fast:
     raise Exception("You can't enable debug and fast mode at the same time")
 elif debug:
-    ser.write(b'd') 
+    ser.write(b'd')
+    print("Debug Mode") 
 elif fast:
     ser.write(b'f')
+    print("Fast Mode")
 else:
     ser.write(b'n') 
+    print("Normal Mode")
 
 # this is a brutal infinite loop calling your realtime data plot
 try:

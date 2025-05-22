@@ -14,6 +14,7 @@
 /* Includes                                                                                 */
 /*------------------------------------------------------------------------------------------*/
 #include <stdint.h>
+#include <stdbool.h>
 
 /*------------------------------------------------------------------------------------------*/
 /* Function prototypes                                                                      */
@@ -40,6 +41,6 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
  * @param   data: Pointer to the data buffer or string
  * @param   length Number of bytes to send
  */
-void logic_writeData(const char *data, int length);
+void logic_writeData(const char *data, int length, bool fastMode);
 
 #endif /* LOGIC_H */

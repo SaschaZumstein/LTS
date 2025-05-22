@@ -148,7 +148,7 @@ int main(void) {
 	CHECK_STATUS(epc901_init());
 	// init UART
 	CHECK_STATUS(HAL_UART_Receive_IT(&huart2, rxBuffer, 1));
-	logic_writeData("\r\n\n-- LTS Startup Please Wait --\r\n", 34);
+	logic_writeData("\r\n\n-- LTS Startup Please Wait --\r\n", 34, false);
 	// delay to display startup screen
 	for (int i = 0; i < 10; i++) {
 		HAL_IWDG_Refresh(&hiwdg);
@@ -159,7 +159,7 @@ int main(void) {
 	LED_PWR_ON
 	LED_ERROR_OFF
 	LED_MEASURE_OFF
-	logic_writeData("\r\n\n-- LTS Startup successfully --\r\n", 35);
+	logic_writeData("\r\n\n-- LTS Startup successfully --\r\n", 35, false);
 	SSD1306_Clear();
 	/* USER CODE END 2 */
 
@@ -174,31 +174,35 @@ int main(void) {
 		distance = logic_calcDist(measureData, minVal, maxVal, maxIndex);
 
 		if (distance == UINT16_MAX) { // measurement not successful
-			CHECK_STATUS(SSD1306_PrintData("Distance:", "---- mm"));
-			logic_writeData("Distance: ---- mm\r\n", 19);
+			if (!fastMode){ // don't write to the display in fast mode
+				CHECK_STATUS(SSD1306_PrintData("Distance:", "---- mm"));
+			}
+			logic_writeData("Distance: ---- mm\r\n", 19, fastMode);
 			LED_MEASURE_OFF
 		}
 		else { // measurement successful
 			sprintf(distStr, "%4d mm", distance);
-			CHECK_STATUS(SSD1306_PrintData("Distance:", distStr));
-			logic_writeData("Distance: ", 10);
-			logic_writeData(distStr, 7);
-			logic_writeData("\r\n", 2);
+			if (!fastMode){ // don't write to the display in fast mode
+				CHECK_STATUS(SSD1306_PrintData("Distance:", distStr));
+			}
+			logic_writeData("Distance: ", 10, fastMode);
+			logic_writeData(distStr, 7, fastMode);
+			logic_writeData("\r\n", 2, fastMode);
 			LED_MEASURE_ON
 		}
 
 		// send shutter time and measured data via serial only if debug mode is activated
 		if (debugMode) {
 			sprintf(shutterStr, "Shutter Time: %4d\r\n", shutterTime);
-			logic_writeData(shutterStr, 20);
+			logic_writeData(shutterStr, 20, false);
 
 			// transmit the data
-			logic_writeData("START DATA\r\n", 12);
+			logic_writeData("START DATA\r\n", 12, true);
 			for (int i = 0; i < NUM_OF_PIX; i++) {
 				txBuffer[0] = measureData[i] >> 4;
 				HAL_UART_Transmit(&huart2, txBuffer, 1, HAL_MAX_DELAY);
 			}
-			logic_writeData("\r\nEND DATA\r\n", 12);
+			logic_writeData("\r\nEND DATA\r\n", 12, true);
 		}
 		/* USER CODE END WHILE */
 
@@ -580,6 +584,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 		else if (rxBuffer[0] == 'f') {
 			debugMode = false;
 			fastMode = true;
+			SSD1306_Clear();
 		}
 		else if (rxBuffer[0] == 'n') {
 			debugMode = false;
@@ -601,7 +606,7 @@ void Error_Handler(void) {
 	LED_MEASURE_OFF
 	LED_ERROR_ON
 	SSD1306_PrintData("LTS Runtime", "Error      ");
-	logic_writeData("\r\n\n-- LTS Runtime error --\r\n", 28);
+	logic_writeData("\r\n\n-- LTS Runtime error --\r\n", 28, false);
 	HAL_IWDG_Refresh(&hiwdg);
 	while (1);
 	/* USER CODE END Error_Handler_Debug */
