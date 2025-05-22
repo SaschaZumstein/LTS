@@ -31,6 +31,7 @@
 #define MIN_COG					18.0
 #define MAX_COG		 			1000.0
 #define INDEX_THRESHOLD			50
+#define BUFFER_SIZE				5
 
 /*------------------------------------------------------------------------------------------*/
 /* External Handles                                                                         */
@@ -126,6 +127,39 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
 
 	// calculate the distance with a calibrated polynomial
 	return (uint16_t)(((((((((((A*cog+B)*cog+C)*cog+D)*cog+E)*cog+F)*cog+G)*cog+H)*cog+I)*cog+J)*cog+K)+0.5);
+}
+
+/**
+ * @brief   Calculates a moving average of the last values
+ * @param   new_distance: Newest calculated value
+ * @return  Average distance in millimeters on success, UINT16_MAX otherwise
+ */
+uint16_t logic_movingAverage(uint16_t new_distance)
+{
+	static uint16_t distBuffer[BUFFER_SIZE] = {0};
+	static uint8_t distIndex = 0;
+	static uint8_t ctr = 0;
+	uint32_t sum = 0;
+
+	// error => reset the buffer
+	if(new_distance == UINT16_MAX){
+		ctr = 0;
+		distIndex = 0;
+		return UINT16_MAX;
+	}
+
+	// store the new calculated distance
+	distBuffer[distIndex] = new_distance;
+	distIndex = (distIndex + 1) % BUFFER_SIZE;
+
+	// ensure that this although works if the buffer isn't full
+	if (ctr < BUFFER_SIZE) ctr++;
+
+	// calculate the moving average
+	for (uint8_t i = 0; i < ctr; i++) {
+		sum += distBuffer[i];
+	}
+	return (uint16_t)(sum/ctr);
 }
 
 /**

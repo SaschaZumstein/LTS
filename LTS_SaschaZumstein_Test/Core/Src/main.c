@@ -170,8 +170,8 @@ int main(void) {
 		CHECK_STATUS(epc901_getData(shutterTime, measureData, &minVal, &maxVal, &maxIndex));
 		// regulate shutter time
 		logic_adjustShutterTime(&shutterTime, minVal, maxVal);
-		// calculate distance
-		distance = logic_calcDist(measureData, minVal, maxVal, maxIndex);
+		// calculate distance and make an average over the last values
+		distance = logic_movingAverage(logic_calcDist(measureData, minVal, maxVal, maxIndex));
 
 		if (distance == UINT16_MAX) { // measurement not successful
 			if (!fastMode){ // don't write to the display in fast mode

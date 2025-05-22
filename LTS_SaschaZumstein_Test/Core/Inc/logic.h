@@ -37,6 +37,13 @@ void logic_adjustShutterTime(uint16_t *shutterTime, uint16_t minVal, uint16_t ma
 uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxVal, uint16_t maxIndex);
 
 /**
+ * @brief   Calculates a moving average of the last values
+ * @param   new_distance: Newest calculated value
+ * @return  Average distance in millimeters on success, UINT16_MAX otherwise
+ */
+uint16_t logic_movingAverage(uint16_t new_distance);
+
+/**
  * @brief	Sends data over the UART interfaces
  * @param   data: Pointer to the data buffer or string
  * @param   length Number of bytes to send
