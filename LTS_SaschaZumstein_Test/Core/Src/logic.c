@@ -29,6 +29,7 @@
 #define MAX_SHUTTER 			12
 #define MIN_DISTANCE			260
 #define MAX_DISTANCE 			1200
+#define INDEX_THRESHOLD			50
 
 /*------------------------------------------------------------------------------------------*/
 /* External Handles                                                                         */
@@ -81,14 +82,17 @@ void logic_adjustShutterTime(uint16_t *shutterTime, uint16_t minVal, uint16_t ma
  * @param   maxVal: Maximum pixel value measured
  * @return  Distance in millimeters on success, UINT16_MAX otherwise
  */
-uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxVal){
+uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxVal, uint16_t maxIndex){
 	uint32_t weightedSum = 0;
 	uint32_t sum = 0;
 	double cog = 0.0;
 	uint16_t distance = 0;
 
 	const uint16_t minMaxMiddle = (minVal+maxVal)/2;
+	const uint16_t startIndex = maxIndex > INDEX_THRESHOLD ? maxIndex - INDEX_THRESHOLD : 0;
+	const uint16_t endIndex = maxIndex < (NUM_OF_PIX-INDEX_THRESHOLD) ? maxIndex + INDEX_THRESHOLD : NUM_OF_PIX;
 
+	// calibrated values
 	const double A = -3.11767119e-25;
 	const double B = 1.49183346e-21;
 	const double C = -3.02357839e-18;
@@ -107,7 +111,7 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
 	}
 
 	// calculate the center of gravity of the beam
-	for (int i = 0; i < NUM_OF_PIX; i++) {
+	for (uint16_t i = startIndex; i < endIndex; i++) {
 		if(aquisitionData[i] >= minMaxMiddle){
 			weightedSum += i*aquisitionData[i];
 			sum += aquisitionData[i];

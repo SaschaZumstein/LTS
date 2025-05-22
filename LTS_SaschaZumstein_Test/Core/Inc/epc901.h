@@ -28,7 +28,7 @@ HAL_StatusTypeDef epc901_init();
  * @param 	maxVal: Pointer to return maximum pixel value
  * @return 	HAL_OK on success, HAL_ERROR otherwise
  */
-HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal);
+HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal, uint16_t *maxIndex);
 
 /**
  * @brief 	Microsecond delay function

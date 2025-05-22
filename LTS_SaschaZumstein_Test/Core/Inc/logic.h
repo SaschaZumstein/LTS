@@ -33,7 +33,7 @@ void logic_adjustShutterTime(uint16_t *shutterTime, uint16_t minVal, uint16_t ma
  * @param   maxVal: Maximum pixel value measured
  * @return  Distance in millimeters on success, UINT16_MAX otherwise
  */
-uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxVal);
+uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxVal, uint16_t maxIndex);
 
 /**
  * @brief	Sends data over the UART interfaces

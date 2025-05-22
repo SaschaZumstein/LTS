@@ -98,11 +98,12 @@ HAL_StatusTypeDef epc901_init() {
  * @param 	maxVal: Pointer to return maximum pixel value
  * @return 	HAL_OK on success, HAL_ERROR otherwise
  */
-HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal)
+HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData, uint16_t *minVal, uint16_t *maxVal, uint16_t *maxIndex)
 {
-	// reset min and max value
+	// reset min and max value and index
 	(*minVal) = UINT16_MAX;
 	(*maxVal) = 0;
+	(*maxIndex) = 0;
 
 	if (I2C_Read_Register(EPC901_I2C_ADDRESS, CHIP_REV_NO_REG) == 0) {
 		return HAL_ERROR;
@@ -135,7 +136,7 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData,
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_RESET);
 	}
 	// Readout the data
-	for (int i = 0; i < NUM_OF_PIX; i++) {
+	for (uint16_t i = 0; i < NUM_OF_PIX; i++) {
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(READ_GPIO_Port, READ_Pin, GPIO_PIN_RESET);
 
@@ -152,6 +153,7 @@ HAL_StatusTypeDef epc901_getData(uint16_t shutterTime, uint16_t *aquisitionData,
 		}
 		if((*maxVal) < aquisitionData[i]){
 			(*maxVal) = aquisitionData[i];
+			(*maxIndex) = i;
 		}
 	}
 	return HAL_OK;

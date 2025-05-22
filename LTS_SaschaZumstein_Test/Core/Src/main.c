@@ -74,6 +74,7 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 uint8_t rxBuffer[1];
 volatile bool debugMode = false;
+volatile bool fastMode = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,13 +103,14 @@ static void MX_IWDG_Init(void);
 int main(void) {
 
 	/* USER CODE BEGIN 1 */
-	uint16_t distance = 300;
+	uint16_t distance = UINT16_MAX;
 	char distStr[9];
 	uint16_t shutterTime = 125;
 	char shutterStr[22];
 	uint16_t measureData[NUM_OF_PIX] = { 0 };
 	uint16_t minVal = UINT16_MAX;
 	uint16_t maxVal = 0;
+	uint16_t maxIndex = 0;
 	uint8_t txBuffer[1];
 	/* USER CODE END 1 */
 
@@ -165,11 +167,11 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		// get the data from the epc901
-		CHECK_STATUS(epc901_getData(shutterTime, measureData, &minVal, &maxVal));
+		CHECK_STATUS(epc901_getData(shutterTime, measureData, &minVal, &maxVal, &maxIndex));
 		// regulate shutter time
 		logic_adjustShutterTime(&shutterTime, minVal, maxVal);
 		// calculate distance
-		distance = logic_calcDist(measureData, minVal, maxVal);
+		distance = logic_calcDist(measureData, minVal, maxVal, maxIndex);
 
 		if (distance == UINT16_MAX) { // measurement not successful
 			CHECK_STATUS(SSD1306_PrintData("Distance:", "---- mm"));
@@ -571,10 +573,17 @@ static void MX_GPIO_Init(void) {
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	if (huart->Instance == USART2) {
-		if (rxBuffer[0] == 't') {
+		if (rxBuffer[0] == 'd') {
 			debugMode = true;
-		} else if (rxBuffer[0] == 'f') {
+			fastMode = false;
+		}
+		else if (rxBuffer[0] == 'f') {
 			debugMode = false;
+			fastMode = true;
+		}
+		else if (rxBuffer[0] == 'n') {
+			debugMode = false;
+			fastMode = false;
 		}
 		HAL_UART_Receive_IT(&huart2, rxBuffer, 1);
 	}
