@@ -103,7 +103,7 @@ def update():
     QtWidgets.QApplication.processEvents()    # you MUST process the plot now
 
 ### MAIN PROGRAM #####
-ser.write(b't') 
+ser.write(b'd') 
 
 # this is a brutal infinite loop calling your realtime data plot
 try:

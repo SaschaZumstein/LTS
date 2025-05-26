@@ -25,7 +25,7 @@ ser = serial.Serial(portName,baudrate)
 # Select mode
 debug = False
 fast = False
-performaceAnalysis = True
+performaceAnalysis = False
 
 lastDist = 0
 lastShutter = 0

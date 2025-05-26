@@ -28,8 +28,8 @@
 #define MIN_PEAK_HEIGHT 		(15<<4)
 #define MIN_SHUTTER 			0
 #define MAX_SHUTTER 			12
-#define MIN_COG					18.0
-#define MAX_COG		 			1000.0
+#define MIN_COG					33.0
+#define MAX_COG		 			973.9
 #define INDEX_THRESHOLD			50
 #define BUFFER_SIZE				5
 
@@ -113,17 +113,17 @@ uint16_t logic_calcDist(uint16_t *aquisitionData, uint16_t minVal, uint16_t maxV
 	}
 
 	// calibrated values
-	const double A = -3.11767119e-25;
-	const double B = 1.49183346e-21;
-	const double C = -3.02357839e-18;
-	const double D = 3.39036248e-15;
-	const double E = -2.30213278e-12;
-	const double F = 9.74279304e-10;
-	const double G = -2.54731085e-07;
-	const double H = 3.96967745e-05;
-	const double I = -3.18417563e-03;
-	const double J = 3.50999221e-01;
-	const double K = 2.54416652e+02;
+	const double A = 2.79747025e-25;
+	const double B = -1.37891320e-21;
+	const double C = 2.90910167e-18;
+	const double D = -3.42503024e-15;
+	const double E = 2.46468843e-12;
+	const double F = -1.11703150e-09;
+	const double G = 3.17628344e-07;
+	const double H = -5.45709783e-05;
+	const double I = 5.49645728e-03;
+	const double J = -4.23428090e-02;
+	const double K = 2.57330192e+02;
 
 	// calculate the distance with a calibrated polynomial
 	return (uint16_t)(((((((((((A*cog+B)*cog+C)*cog+D)*cog+E)*cog+F)*cog+G)*cog+H)*cog+I)*cog+J)*cog+K)+0.5);
