@@ -6,7 +6,7 @@ Last modified on Wed Mai 21 16:43:58 2025
 @author: Gion-Pol Catregn (FHGR)
 @author: Sascha Zumstein (FHGR)
 
-@version 1.0
+@version 1.0 
 """
 
 # Import libraries
