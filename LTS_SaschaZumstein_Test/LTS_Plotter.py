@@ -17,15 +17,17 @@ import pyqtgraph as pg
 import serial
 import time
 
-# Create object serial port
+# Create object serial port, change port if neccessary
 portName = "COM7"
 baudrate = 115200
 ser = serial.Serial(portName,baudrate)
 
-# Select mode
+# Change here to test the different modes or to show the performance
 debug = False
 fast = False
-performaceAnalysis = True
+performaceAnalysis = False
+
+# ---------------------------------- DO NOT EDIT BELOW THIS LINE ----------------------------------
 
 lastDist = 0
 lastShutter = 0
@@ -71,7 +73,7 @@ def update():
     global start_time
     global end_time
 
-    #Search for special frames
+    #Search for special frames and calculate performance
     current_char = ser.readline()
     if current_char[:8] == b'Distance':
         if lastDist != current_char:
