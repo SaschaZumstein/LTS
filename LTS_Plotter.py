@@ -23,9 +23,9 @@ baudrate = 115200
 ser = serial.Serial(portName,baudrate)
 
 # Change here to test the different modes or to show the performance
-debug = False
+debug = True
 fast = False
-performaceAnalysis = False
+performaceAnalysis = True
 
 # ---------------------------------- DO NOT EDIT BELOW THIS LINE ----------------------------------
 
